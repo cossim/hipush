@@ -33,3 +33,6 @@ type HuaweiPushRequestData struct {
 	Sound       string
 	ClickAction ClickAction // 点击行为
 }
+
+type ApnsPushRequestData struct {
+}

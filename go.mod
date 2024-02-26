@@ -3,8 +3,11 @@ module github.com/cossim/hipush
 go 1.22.0
 
 require (
+	github.com/appleboy/go-fcm v0.1.6
 	github.com/gin-gonic/gin v1.9.1
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/msalihkarakasli/go-hms-push v0.0.0-20210731212030-00e7b986815b
+	github.com/sideshow/apns2 v0.23.0
 )
 
 require (
@@ -16,6 +19,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.14.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
+	github.com/golang-jwt/jwt/v4 v4.4.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect

@@ -3,6 +3,25 @@ package dto
 // Platform 枚举表示推送平台
 type Platform int
 
+func (p Platform) String() string {
+	switch p {
+	case PlatformIOS:
+		return "iOS"
+	case PlatformHuawei:
+		return "huawei"
+	case PlatformGoogle:
+		return "google"
+	case PlatformXiaomi:
+		return "xiaomi"
+	case PlatformVivo:
+		return "vivo"
+	case PlatformOppo:
+		return "oppo"
+	default:
+		return "Unknown"
+	}
+}
+
 const (
 	// PlatformIOS 表示 iOS 平台
 	PlatformIOS Platform = iota + 1
