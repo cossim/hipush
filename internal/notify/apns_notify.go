@@ -8,26 +8,153 @@ import (
 )
 
 type ApnsPushNotification struct {
-	Priority string `json:"priority,omitempty"`
-	Title    string
+	Retry             int                    `json:"retry,omitempty"`
+	Tokens            []string               `json:"tokens" binding:"required"`
+	Priority          string                 `json:"priority,omitempty"`
+	Title             string                 `json:"title,omitempty"`
+	Message           string                 `json:"message,omitempty"`
+	Expiration        *int64                 `json:"expiration,omitempty"`
+	ApnsID            string                 `json:"apns_id,omitempty"`
+	CollapseID        string                 `json:"collapse_id,omitempty"`
+	Topic             string                 `json:"topic,omitempty"`
+	PushType          string                 `json:"push_type,omitempty"`
+	Badge             *int                   `json:"badge,omitempty"`
+	Category          string                 `json:"category,omitempty"`
+	ThreadID          string                 `json:"thread-id,omitempty"`
+	URLArgs           []string               `json:"url-args,omitempty"`
+	Alert             Alert                  `json:"alert,omitempty"`
+	ContentAvailable  bool                   `json:"content_available,omitempty"`
+	MutableContent    bool                   `json:"mutable_content"`
+	Production        bool                   `json:"production,omitempty"`
+	Development       bool                   `json:"development,omitempty"`
+	SoundName         string                 `json:"name,omitempty"`
+	SoundVolume       float32                `json:"volume,omitempty"`
+	Apns              D                      `json:"apns,omitempty"`
+	InterruptionLevel string                 `json:"interruption_level,omitempty"`
+	Sound             interface{}            `json:"sound,omitempty"`
+	Data              map[string]interface{} `json:"data,omitempty"`
+}
 
-	// iOS
-	Expiration        *int64   `json:"expiration,omitempty"`
-	ApnsID            string   `json:"apns_id,omitempty"`
-	CollapseID        string   `json:"collapse_id,omitempty"`
-	Topic             string   `json:"topic,omitempty"`
-	PushType          string   `json:"push_type,omitempty"`
-	Badge             *int     `json:"badge,omitempty"`
-	Category          string   `json:"category,omitempty"`
-	ThreadID          string   `json:"thread-id,omitempty"`
-	URLArgs           []string `json:"url-args,omitempty"`
-	Alert             Alert    `json:"alert,omitempty"`
-	Production        bool     `json:"production,omitempty"`
-	Development       bool     `json:"development,omitempty"`
-	SoundName         string   `json:"name,omitempty"`
-	SoundVolume       float32  `json:"volume,omitempty"`
-	Apns              D        `json:"apns,omitempty"`
-	InterruptionLevel string   `json:"interruption_level,omitempty"`
+func (a *ApnsPushNotification) Get() interface{} {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (a *ApnsPushNotification) GetRetry() int {
+	return a.Retry
+}
+
+func (a *ApnsPushNotification) GetTokens() []string {
+	return a.Tokens
+}
+
+func (a *ApnsPushNotification) GetTitle() string {
+	return a.Title
+}
+
+func (a *ApnsPushNotification) GetMessage() string {
+	return a.Message
+}
+
+func (a *ApnsPushNotification) GetTopic() string {
+	return a.Topic
+}
+
+func (a *ApnsPushNotification) GetKey() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (a *ApnsPushNotification) GetCategory() string {
+	return a.Category
+}
+
+func (a *ApnsPushNotification) GetSound() interface{} {
+	return a.Sound
+}
+
+func (a *ApnsPushNotification) GetAlert() interface{} {
+	return a.Alert
+}
+
+func (a *ApnsPushNotification) GetBadge() int {
+	if a.Badge == nil {
+		return 0
+	}
+	return *a.Badge
+}
+
+func (a *ApnsPushNotification) GetThreadID() string {
+	return a.ThreadID
+}
+
+func (a *ApnsPushNotification) GetData() map[string]interface{} {
+	return a.Data
+}
+
+func (a *ApnsPushNotification) GetImage() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (a *ApnsPushNotification) GetID() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (a *ApnsPushNotification) GetPushType() string {
+	return a.PushType
+}
+
+func (a *ApnsPushNotification) GetPriority() string {
+	return a.Priority
+}
+
+func (a *ApnsPushNotification) IsContentAvailable() bool {
+	return a.ContentAvailable
+}
+
+func (a *ApnsPushNotification) IsMutableContent() bool {
+	return a.MutableContent
+}
+
+func (a *ApnsPushNotification) IsDevelopment() bool {
+	return a.Development
+}
+
+func (a *ApnsPushNotification) GetExpiration() *int64 {
+	if a.Expiration == nil {
+		return nil
+	}
+	return a.Expiration
+}
+
+func (a *ApnsPushNotification) GetApnsID() string {
+	return a.ApnsID
+}
+
+func (a *ApnsPushNotification) GetCollapseID() string {
+	return a.CollapseID
+}
+
+func (a *ApnsPushNotification) GetURLArgs() []string {
+	return a.URLArgs
+}
+
+func (a *ApnsPushNotification) GetSoundName() string {
+	return a.SoundName
+}
+
+func (a *ApnsPushNotification) GetSoundVolume() float32 {
+	return a.SoundVolume
+}
+
+func (a *ApnsPushNotification) GetApns() map[string]interface{} {
+	return a.Apns
+}
+
+func (a *ApnsPushNotification) GetInterruptionLevel() string {
+	return a.InterruptionLevel
 }
 
 // Alert is APNs payload
@@ -52,9 +179,9 @@ type D map[string]interface{}
 // GetIOSNotification use for define iOS notification.
 // The iOS Notification Payload (Payload Key Reference)
 // Ref: https://apple.co/2VtH6Iu
-func GetIOSNotification(req *PushNotification) *apns2.Notification {
+func GetIOSNotification(req *ApnsPushNotification) *apns2.Notification {
 	notification := &apns2.Notification{
-		ApnsID:     req.ApnsID,
+		//ApnsID: req.ApnsID,
 		Topic:      req.Topic,
 		CollapseID: req.CollapseID,
 	}
@@ -135,7 +262,7 @@ func GetIOSNotification(req *PushNotification) *apns2.Notification {
 	return notification
 }
 
-func iosAlertDictionary(notificationPayload *payload.Payload, req *PushNotification) *payload.Payload {
+func iosAlertDictionary(notificationPayload *payload.Payload, req *ApnsPushNotification) *payload.Payload {
 	// Alert dictionary
 
 	if len(req.Title) > 0 {
@@ -199,7 +326,6 @@ func iosAlertDictionary(notificationPayload *payload.Payload, req *PushNotificat
 	if len(req.Alert.SummaryArg) > 0 {
 		notificationPayload.AlertSummaryArg(req.Alert.SummaryArg)
 	}
-
 	if req.Alert.SummaryArgCount > 0 {
 		notificationPayload.AlertSummaryArgCount(req.Alert.SummaryArgCount)
 	}

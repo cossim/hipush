@@ -2,8 +2,8 @@ package http
 
 import (
 	"context"
-	"errors"
-	"github.com/cossim/hipush/api/v1/http/dto"
+	"github.com/cossim/hipush/api/http/v1/dto"
+	"github.com/cossim/hipush/internal/consts"
 	"github.com/cossim/hipush/internal/factory"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -11,25 +11,23 @@ import (
 )
 
 type Handler struct {
-	factory factory.PushServiceFactory
+	factory *factory.PushServiceFactory
+}
+
+func NewHandler(factory *factory.PushServiceFactory) *Handler {
+	return &Handler{factory: factory}
 }
 
 func (h *Handler) Start(ctx context.Context) error {
 	r := gin.Default()
-	r.GET("/api/v1/push", h.pushHandler)
+	r.POST("/api/v1/push", h.pushHandler)
 
 	srv := &http.Server{
 		Addr:    ":8080",
 		Handler: r,
 	}
 
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			panic(err)
-		}
-	}()
-
-	return nil
+	return srv.ListenAndServe()
 }
 
 func (h *Handler) pushHandler(c *gin.Context) {
@@ -40,10 +38,10 @@ func (h *Handler) pushHandler(c *gin.Context) {
 		return
 	}
 
-	switch req.Platform {
-	case dto.PlatformIOS:
+	switch consts.Platform(req.Platform) {
+	case consts.PlatformIOS:
 		h.handleIOSPush(c, req)
-	case dto.PlatformHuawei:
+	case consts.PlatformHuawei:
 		h.handleHuaweiPush(c, req)
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid platform"})
