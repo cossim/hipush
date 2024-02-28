@@ -1,52 +1,55 @@
 package consts
 
 // Platform 枚举表示推送平台
-type Platform int
+type Platform string
 
 const (
+	// PlatformUnknown 表示未知平台
+	PlatformUnknown Platform = "unknown"
+
 	// PlatformIOS 表示 iOS 平台
-	PlatformIOS Platform = iota + 1
+	PlatformIOS Platform = "ios"
+
+	// PlatformAndroid 表示安卓平台
+	PlatformAndroid Platform = "android"
 
 	// PlatformHuawei 表示华为平台
-	PlatformHuawei
-
-	// PlatformGoogle 表示谷歌平台
-	PlatformGoogle
+	PlatformHuawei Platform = "huawei"
 
 	// PlatformXiaomi 表示小米平台
-	PlatformXiaomi
+	PlatformXiaomi Platform = "xiaomi"
 
 	// PlatformVivo 表示 Vivo 平台
-	PlatformVivo
+	PlatformVivo Platform = "vivo"
 
 	// PlatformOppo 表示 Oppo 平台
-	PlatformOppo
+	PlatformOppo Platform = "oppo"
 )
 
 // String converts the enum value to its string representation.
 func (p Platform) String() string {
 	switch p {
 	case PlatformIOS:
-		return "iOS"
+		return "ios"
+	case PlatformAndroid:
+		return "android"
 	case PlatformHuawei:
-		return "Huawei"
-	case PlatformGoogle:
-		return "Google"
+		return "huawei"
 	case PlatformXiaomi:
-		return "Xiaomi"
+		return "xiaomi"
 	case PlatformVivo:
-		return "Vivo"
+		return "vivo"
 	case PlatformOppo:
-		return "Oppo"
+		return "oppo"
 	default:
-		return "Unknown"
+		return "unknown"
 	}
 }
 
 // IsValid 判断平台是否有效
 func (p Platform) IsValid() bool {
 	switch p {
-	case PlatformIOS, PlatformHuawei, PlatformGoogle, PlatformXiaomi, PlatformVivo, PlatformOppo:
+	case PlatformIOS, PlatformHuawei, PlatformAndroid, PlatformXiaomi, PlatformVivo, PlatformOppo:
 		return true
 	default:
 		return false

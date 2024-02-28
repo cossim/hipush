@@ -59,8 +59,8 @@ func (h *Handler) Start(ctx context.Context) error {
 
 func (h *Handler) Push(ctx context.Context, req *v1.PushRequest) (*v1.PushResponse, error) {
 	resp := &v1.PushResponse{}
-	fmt.Println("consts.Platform(req.Platform).String() => ", consts.Platform(req.Platform).String())
-	service, err := h.factory.GetPushService(consts.Platform(req.Platform).String())
+	fmt.Println("consts.Platform(req.Platform).String() => ", req.Platform)
+	service, err := h.factory.GetPushService(req.Platform)
 	if err != nil {
 		h.logger.Error(err, "failed to create push service")
 		return resp, err
