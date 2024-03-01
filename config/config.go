@@ -11,7 +11,7 @@ type iOSAppConfig struct {
 	MaxRetry            int    `yaml:"max_retry"`
 	Enabled             bool   `yaml:"enabled"`
 	Production          bool   `yaml:"production"`
-	AppID               string `yaml:"appid"`
+	AppID               string `yaml:"app_id"`
 	KeyPath             string `yaml:"key_path"`
 	KeyType             string `yaml:"key_type"`
 	Password            string `yaml:"password"`
@@ -21,17 +21,25 @@ type iOSAppConfig struct {
 
 type HuaweiAppConfig struct {
 	Enabled   bool   `yaml:"enabled"`
-	AppID     string `yaml:"appid"`
-	AppSecret string `yaml:"appsecret"`
+	AppID     string `yaml:"app_id"`
+	AppSecret string `yaml:"app_secret"`
 	AuthUrl   string `yaml:"auth_url"`
 	PushUrl   string `yaml:"push_url"`
 	MaxRetry  int    `yaml:"max_retry"`
 }
 
+type VivoAppConfig struct {
+	Enabled   bool   `yaml:"enabled"`
+	AppID     string `yaml:"app_id"`
+	AppKey    string `yaml:"app_key"`
+	AppSecret string `yaml:"app_secret"`
+	MaxRetry  int    `yaml:"max_retry"`
+}
+
 type AndroidAppConfig struct {
 	Enabled  bool   `yaml:"enabled"`
-	AppID    string `yaml:"appid"`
-	AppKey   string `yaml:"appkey"`
+	AppID    string `yaml:"app_id"`
+	AppKey   string `yaml:"app_key"`
 	MaxRetry int    `yaml:"max_retry"`
 }
 
@@ -41,6 +49,7 @@ type Config struct {
 	IOS     []iOSAppConfig     `yaml:"ios"`
 	Huawei  []HuaweiAppConfig  `yaml:"huawei"`
 	Android []AndroidAppConfig `yaml:" android"`
+	Vivo    []VivoAppConfig    `yaml:"vivo"`
 }
 
 type HTTPConfig struct {

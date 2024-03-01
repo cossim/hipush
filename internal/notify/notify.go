@@ -10,6 +10,11 @@ const (
 	NORMAL = "nornal"
 )
 
+type ClickAction struct {
+	Action  string `json:"action,omitempty"`
+	Content string `json:"content,omitempty"`
+}
+
 // D provide string array
 type D map[string]interface{}
 

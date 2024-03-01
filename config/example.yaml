@@ -1,28 +1,46 @@
+http:
+  enabled: true
+  address: "0.0.0.0"
+  port: 7070
 
+grpc:
+  enabled: true
+  address: "0.0.0.0"
+  port: 7071
 
 ios:
   - enabled: true
+
     # 应用程序的 Bundle ID
     # ios capacitor.config文件中的appId 例如com.hitosea.apptest
     appid: com.hitosea.apptest
+
     # APNs 密钥文件路径
     key_path: ""
+
     # 密钥类型（例如：pem）
     key_type: pem
+
     # 密钥文件的密码（如果有）
     password: ""
+
     # 是否为生产环境
     production: false
+
     # 最大并发推送数
     max_concurrent_pushes: 100
     # 最大重试次数
+
     max_retry: 5
+
     # 密钥 ID
     key_id: ""
+
     # 开发团队 ID
     team_id: ""
+
   - enabled: true
-    appid: ""
+    app_id: ""
     key_path: ""
     key_type: pem
     password: ""
@@ -31,8 +49,22 @@ ios:
     max_retry: 0
     key_id: ""
     team_id: ""
+
 huawei:
   - enabled: true
-    appid: huawei-appid-1
-    appsecret: huawei-app-secret-1
+    app_id: huawei-appid-1
+    app_secret: huawei-app-secret-1
+
+    # 华为认证URL
+    auth_url: https://oauth-login.cloud.huawei.com/oauth2/v3/token
+
+    # 华为推送URL
+    push_url: https://push-api.cloud.huawei.com
+    max_retry: 5
+
+vivo:
+  - enabled: true
+    app_id: ""
+    app_key: ""
+    app_secret: ""
     max_retry: 5

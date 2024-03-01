@@ -15,6 +15,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 )
 
@@ -64,28 +65,53 @@ func main() {
 		return adapter.NewPushServiceAdapter(svc)
 	})
 
+	pushServiceFactory.Register(consts.PlatformVivo.String(), func() push.PushService {
+		svc, err := push.NewVivoService(cfg)
+		if err != nil {
+			panic(err)
+		}
+		return adapter.NewPushServiceAdapter(svc)
+	})
+
+	// 创建一个父上下文和取消函数
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var wg sync.WaitGroup
+
 	if cfg.HTTP.Enabled {
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			httpHandler := h.NewHandler(cfg, zapr.NewLogger(zapLogger), pushServiceFactory)
-			if err := httpHandler.Start(context.Background()); err != nil {
+			if err := httpHandler.Start(ctx); err != nil {
 				log.Fatalf("failed to start HTTP server: %v", err)
 			}
 		}()
 	}
 
 	if cfg.GRPC.Enabled {
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			grpcHandler := g.NewHandler(cfg, zapr.NewLogger(zapLogger), pushServiceFactory)
-			if err := grpcHandler.Start(context.Background()); err != nil {
+			if err := grpcHandler.Start(ctx); err != nil {
 				log.Fatalf("failed to start GRPC server: %v", err)
 			}
 		}()
 	}
 
-	// 等待信号
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
-	<-signalChan
-
-	log.Println("shutting down...")
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		select {
+		case <-ctx.Done():
+			wg.Wait()
+			return
+		case <-sig:
+			log.Println("receive system signal, cancel context")
+			cancel()
+		}
+	}()
+	wg.Wait()
 }

@@ -34,6 +34,9 @@ func NewHandler(cfg *config.Config, logger logr.Logger, factory *factory.PushSer
 }
 
 func (h *Handler) Start(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	r := gin.Default()
 	r.POST("/api/v1/push", h.pushHandler)
 
@@ -46,7 +49,6 @@ func (h *Handler) Start(ctx context.Context) error {
 	go func() {
 		<-ctx.Done()
 		h.logger.Info("shutting down httpServer", "addr", h.cfg.HTTP.Addr())
-
 		if err := srv.Shutdown(ctx); err != nil {
 			h.logger.Error(err, "error shutting down httpServer")
 		}
@@ -84,6 +86,8 @@ func (h *Handler) pushHandler(c *gin.Context) {
 		h.handleIOSPush(c, req)
 	case consts.PlatformHuawei:
 		h.handleHuaweiPush(c, req)
+	case consts.PlatformVivo:
+		h.handleVivoPush(c, req)
 	default:
 		c.JSON(http.StatusBadRequest, Response{Code: http.StatusBadRequest, Msg: "invalid platform", Data: nil})
 	}

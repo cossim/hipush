@@ -11,8 +11,6 @@ type PushRequest struct {
 	// ios capacitor.config文件中的appId 例如com.hitosea.apptest
 	AppID string `json:"app_id" binding:"required"`
 
-	AppSecret string `json:"app_secret"`
-
 	// 自定义的消息数据，不同平台可能有不同的格式
 	Data interface{} `json:"data"`
 }

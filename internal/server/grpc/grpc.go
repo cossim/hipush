@@ -33,6 +33,9 @@ func NewHandler(cfg *config.Config, logger logr.Logger, factory *factory.PushSer
 }
 
 func (h *Handler) Start(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	lisAddr := fmt.Sprintf("%s", h.cfg.GRPC.Addr())
 	lis, err := net.Listen("tcp", lisAddr)
 	if err != nil {
@@ -46,7 +49,6 @@ func (h *Handler) Start(ctx context.Context) error {
 	go func() {
 		<-ctx.Done()
 		h.logger.Info("Shutting down grpcServer", "addr", lisAddr)
-		//h.cancel()
 		server.GracefulStop()
 		close(serverShutdown)
 	}()

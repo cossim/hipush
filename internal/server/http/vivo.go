@@ -2,15 +2,15 @@ package http
 
 import (
 	"encoding/json"
-	"github.com/cossim/go-hms-push/push/model"
 	"github.com/cossim/hipush/api/http/v1/dto"
 	"github.com/cossim/hipush/internal/consts"
 	"github.com/cossim/hipush/internal/notify"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"net/http"
 )
 
-func (h *Handler) handleHuaweiPush(c *gin.Context, req *dto.PushRequest) {
+func (h *Handler) handleVivoPush(c *gin.Context, req *dto.PushRequest) {
 	service, err := h.factory.GetPushService(consts.Platform(req.Platform).String())
 	if err != nil {
 		c.JSON(http.StatusBadRequest, Response{Code: http.StatusBadRequest, Msg: err.Error(), Data: nil})
@@ -23,7 +23,7 @@ func (h *Handler) handleHuaweiPush(c *gin.Context, req *dto.PushRequest) {
 		c.JSON(http.StatusBadRequest, Response{Code: http.StatusBadRequest, Msg: "invalid data", Data: nil})
 		return
 	}
-	var r dto.HuaweiPushRequestData
+	var r dto.VivoPushRequestData
 	if err := json.Unmarshal(dataBytes, &r); err != nil {
 		h.logger.Error(err, "Failed to unmarshal data")
 		c.JSON(http.StatusBadRequest, Response{Code: http.StatusBadRequest, Msg: "invalid data", Data: nil})
@@ -32,25 +32,21 @@ func (h *Handler) handleHuaweiPush(c *gin.Context, req *dto.PushRequest) {
 
 	h.logger.Info("Handling push request", "platform", req.Platform, "appID", req.AppID, "tokens", req.Token, "req", r)
 
-	rr := &notify.HMSPushNotification{
+	rr := &notify.VivoPushNotification{
 		AppID:       req.AppID,
+		RequestId:   uuid.New().String(),
 		Tokens:      req.Token,
+		Title:       r.Title,
+		Message:     r.Message,
+		Category:    r.Category,
+		Data:        r.Data,
+		ClickAction: nil,
+		NotifyType:  0,
+		TTL:         r.TTL,
+		Retry:       0,
+		SendOnline:  false,
+		Foreground:  r.Foreground,
 		Development: true,
-		MessageRequest: &model.MessageRequest{
-			Message: &model.Message{
-				Notification: &model.Notification{
-					Title: r.Title,
-					Body:  r.Message,
-				},
-				Android: &model.AndroidConfig{
-					Notification: &model.AndroidNotification{
-						Title: r.Title,
-						Body:  r.Message,
-					},
-				},
-				Token: req.Token,
-			},
-		},
 	}
 	if err := service.Send(c, rr); err != nil {
 		c.JSON(http.StatusInternalServerError, Response{Code: http.StatusBadRequest, Msg: err.Error(), Data: nil})

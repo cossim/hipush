@@ -62,3 +62,14 @@ type Sound struct {
 	Name     string  `json:"name"`
 	Volume   float64 `json:"volume"`
 }
+
+type VivoPushRequestData struct {
+	DryRun     bool
+	Foreground bool
+	TTL        int
+	Type       string
+	Title      string
+	Message    string
+	Category   string
+	Data       map[string]string
+}
