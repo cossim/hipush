@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 )
@@ -22,12 +23,45 @@ type HuaweiAppConfig struct {
 	Enabled   bool   `yaml:"enabled"`
 	AppID     string `yaml:"appid"`
 	AppSecret string `yaml:"appsecret"`
+	AuthUrl   string `yaml:"auth_url"`
+	PushUrl   string `yaml:"push_url"`
 	MaxRetry  int    `yaml:"max_retry"`
 }
 
+type AndroidAppConfig struct {
+	Enabled  bool   `yaml:"enabled"`
+	AppID    string `yaml:"appid"`
+	AppKey   string `yaml:"appkey"`
+	MaxRetry int    `yaml:"max_retry"`
+}
+
 type Config struct {
-	IOS    []iOSAppConfig    `yaml:"ios"`
-	Huawei []HuaweiAppConfig `yaml:"huawei"`
+	HTTP    HTTPConfig         `yaml:"http"`
+	GRPC    GRPCConfig         `yaml:"grpc"`
+	IOS     []iOSAppConfig     `yaml:"ios"`
+	Huawei  []HuaweiAppConfig  `yaml:"huawei"`
+	Android []AndroidAppConfig `yaml:" android"`
+}
+
+type HTTPConfig struct {
+	Enabled bool `yaml:"enabled"`
+
+	Address string `mapstructure:"address" yaml:"address"`
+	Port    int    `mapstructure:"port" yaml:"port"`
+}
+
+func (c HTTPConfig) Addr() string {
+	return fmt.Sprintf("%s:%d", c.Address, c.Port)
+}
+
+type GRPCConfig struct {
+	Enabled bool   `yaml:"enabled"`
+	Address string `mapstructure:"address" yaml:"address"`
+	Port    int    `mapstructure:"port" yaml:"port"`
+}
+
+func (c GRPCConfig) Addr() string {
+	return fmt.Sprintf("%s:%d", c.Address, c.Port)
 }
 
 func Load(filename string) (*Config, error) {

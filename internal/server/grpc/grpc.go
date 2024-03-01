@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cossim/hipush/api/grpc/v1"
+	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/internal/consts"
 	"github.com/cossim/hipush/internal/factory"
 	"github.com/cossim/hipush/internal/notify"
@@ -17,17 +18,22 @@ import (
 )
 
 type Handler struct {
-	factory *factory.PushServiceFactory
+	cfg     *config.Config
 	logger  logr.Logger
+	factory *factory.PushServiceFactory
 	v1.UnimplementedPushServiceServer
 }
 
-func NewHandler(factory *factory.PushServiceFactory, logger logr.Logger) *Handler {
-	return &Handler{factory: factory, logger: logger}
+func NewHandler(cfg *config.Config, logger logr.Logger, factory *factory.PushServiceFactory) *Handler {
+	return &Handler{
+		cfg:     cfg,
+		logger:  logger.WithValues("server", "grpc"),
+		factory: factory,
+	}
 }
 
 func (h *Handler) Start(ctx context.Context) error {
-	lisAddr := fmt.Sprintf("%s", ":9090")
+	lisAddr := fmt.Sprintf("%s", h.cfg.GRPC.Addr())
 	lis, err := net.Listen("tcp", lisAddr)
 	if err != nil {
 		return err
@@ -59,7 +65,8 @@ func (h *Handler) Start(ctx context.Context) error {
 
 func (h *Handler) Push(ctx context.Context, req *v1.PushRequest) (*v1.PushResponse, error) {
 	resp := &v1.PushResponse{}
-	fmt.Println("consts.Platform(req.Platform).String() => ", req.Platform)
+	h.logger.Info("Received push request", "platform", req.Platform, "tokens", req.Tokens, "req", req)
+
 	service, err := h.factory.GetPushService(req.Platform)
 	if err != nil {
 		h.logger.Error(err, "failed to create push service")
@@ -68,6 +75,7 @@ func (h *Handler) Push(ctx context.Context, req *v1.PushRequest) (*v1.PushRespon
 
 	r, err := h.getPushRequest(req)
 	if err != nil {
+		h.logger.Error(err, "failed to get push request")
 		return nil, err
 	}
 
@@ -76,6 +84,7 @@ func (h *Handler) Push(ctx context.Context, req *v1.PushRequest) (*v1.PushRespon
 		return resp, err
 	}
 
+	h.logger.Info("Push request processed success")
 	return resp, nil
 }
 

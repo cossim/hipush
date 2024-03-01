@@ -42,7 +42,7 @@ type APNsService struct {
 	clients map[string]*apns2.Client
 }
 
-func NewAPNsService(cfg *config.Config) *APNsService {
+func NewAPNsService(cfg *config.Config) (*APNsService, error) {
 	var ext string
 	var err error
 	var authKey *ecdsa.PrivateKey
@@ -53,7 +53,7 @@ func NewAPNsService(cfg *config.Config) *APNsService {
 	}
 
 	for _, v := range cfg.IOS {
-		if v.KeyPath != "" {
+		if v.KeyPath != "" && v.Enabled {
 			ext = filepath.Ext(v.KeyPath)
 			switch ext {
 			case dotP12:
@@ -75,14 +75,14 @@ func NewAPNsService(cfg *config.Config) *APNsService {
 				}
 				client, err := s.newApnsTokenClient(v.Production, token)
 				if err != nil {
-					panic(err)
+					return nil, err
 				}
 				s.clients[v.AppID] = client
 			default:
 				err = errors.New("wrong certificate key extension")
 			}
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 		}
 	}
@@ -91,7 +91,7 @@ func NewAPNsService(cfg *config.Config) *APNsService {
 		MaxConcurrentIOSPushes = make(chan struct{}, 100)
 	})
 
-	return s
+	return s, nil
 }
 
 func (a *APNsService) newApnsTokenClient(production bool, token *token.Token) (*apns2.Client, error) {
@@ -147,8 +147,10 @@ func (a *APNsService) Send(ctx context.Context, request interface{}) error {
 
 	retry := req.Retry
 
-	// 设置最大重试次数
-	maxRetry := 5
+	var maxRetry = retry
+	if maxRetry <= 0 {
+		maxRetry = DefaultMaxRetry // 设置一个默认的最大重试次数
+	}
 	if retry > 0 && retry < maxRetry {
 		maxRetry = retry
 	}
@@ -277,7 +279,7 @@ func (a *APNsService) sendNotifications(req *notify.ApnsPushNotification) ([]str
 	var wg sync.WaitGroup
 
 	if _, ok := a.clients[req.ApnsID]; !ok {
-		return nil, errors.New("invalid appid")
+		return nil, errors.New("invalid appid or appid push is not enabled")
 	}
 
 	var es []error

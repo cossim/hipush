@@ -173,9 +173,6 @@ type Alert struct {
 	SummaryArgCount int      `json:"summary-arg-count,omitempty"`
 }
 
-// D provide string array
-type D map[string]interface{}
-
 // GetIOSNotification use for define iOS notification.
 // The iOS Notification Payload (Payload Key Reference)
 // Ref: https://apple.co/2VtH6Iu

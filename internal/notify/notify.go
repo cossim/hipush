@@ -2,13 +2,16 @@ package notify
 
 import (
 	"github.com/appleboy/go-fcm"
-	"github.com/msalihkarakasli/go-hms-push/push/model"
+	"github.com/cossim/go-hms-push/push/model"
 )
 
 const (
 	HIGH   = "high"
 	NORMAL = "nornal"
 )
+
+// D provide string array
+type D map[string]interface{}
 
 // Sound sets the aps sound on the payload.
 // https://developer.apple.com/documentation/usernotifications/generating-a-remote-notification#:~:text=%E8%AD%A6%E6%8A%A5%E7%9A%84%E5%A3%B0%E9%9F%B3%E3%80%82-,sound%E8%A1%A8%203.%E5%AD%97%E5%85%B8%E4%B8%AD%E5%8C%85%E5%90%AB%E7%9A%84%E9%94%AE,-%E9%92%A5%E5%8C%99

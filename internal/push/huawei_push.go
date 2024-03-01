@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	c "github.com/cossim/go-hms-push/push/config"
+	client "github.com/cossim/go-hms-push/push/core"
+	"github.com/cossim/go-hms-push/push/model"
+	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/internal/notify"
-	c "github.com/msalihkarakasli/go-hms-push/push/config"
-	client "github.com/msalihkarakasli/go-hms-push/push/core"
-	"github.com/msalihkarakasli/go-hms-push/push/model"
 	"log"
 )
 
@@ -16,18 +17,52 @@ const (
 	HIGH   = "high"
 	NORMAL = "nornal"
 
-	DefaultMaxRetry = 5
+	DefaultMaxRetry = 1
+
+	DefaultAuthUrl = "https://oauth-login.cloud.huawei.com/oauth2/v3/token"
+	DefaultPushUrl = "https://push-api.cloud.huawei.com"
 )
 
 // HMSService 实现huawei推送
 type HMSService struct {
-	client *client.HMSClient
+	clients map[string]*client.HMSClient
+}
+
+func NewHMSService(cfg *config.Config) (*HMSService, error) {
+	s := &HMSService{
+		clients: make(map[string]*client.HMSClient),
+	}
+
+	var (
+		AuthUrl = DefaultAuthUrl
+		PushUrl = DefaultPushUrl
+	)
+
+	for _, v := range cfg.Huawei {
+		if v.AuthUrl != "" {
+			AuthUrl = v.AuthUrl
+		}
+		if v.PushUrl != "" {
+			PushUrl = v.PushUrl
+		}
+		client, err := client.NewHttpClient(&c.Config{
+			AppId:     v.AppID,
+			AppSecret: v.AppSecret,
+			AuthUrl:   AuthUrl,
+			PushUrl:   PushUrl,
+		})
+		if err != nil {
+			return nil, err
+		}
+		s.clients[v.AppID] = client
+	}
+	return s, nil
 }
 
 func (h *HMSService) Send(ctx context.Context, request interface{}) error {
-	req, ok := request.(notify.HMSPushNotification)
+	req, ok := request.(*notify.HMSPushNotification)
 	if !ok {
-		return errors.New("invalid request")
+		return errors.New("invalid request parameter")
 	}
 
 	var maxRetry = req.Retry
@@ -35,12 +70,28 @@ func (h *HMSService) Send(ctx context.Context, request interface{}) error {
 		maxRetry = DefaultMaxRetry // 设置一个默认的最大重试次数
 	}
 
-	if err := h.validation(&req); err != nil {
+	if err := h.validation(req); err != nil {
 		return err
 	}
 
+	client, ok := h.clients[req.AppID]
+	if !ok {
+		return errors.New("invalid appid or appid push is not enabled")
+	}
+
+	log.Printf("hms req %v", req)
+
 	for retryCount := 0; retryCount < maxRetry; retryCount++ {
-		res, err := h.client.SendMessage(ctx, req.MessageRequest)
+		notification, err := h.buildNotification(req)
+		if err != nil {
+			return err
+		}
+		marshal, err := json.Marshal(notification)
+		if err != nil {
+			return err
+		}
+		fmt.Println("marshal => ", string(marshal))
+		res, err := client.SendMessage(ctx, notification)
 		if err != nil {
 			return err
 		}
@@ -50,7 +101,7 @@ func (h *HMSService) Send(ctx context.Context, request interface{}) error {
 			return nil
 		}
 
-		log.Printf("Huawei Send Notification is failed! Code: %s", res.Code)
+		log.Printf("Huawei Send Notification is failed! Code: %s msg: %s", res.Code, res.Msg)
 	}
 
 	return fmt.Errorf("failed to send notification after %d attempts", maxRetry)
@@ -93,14 +144,14 @@ func (h *HMSService) Name() string {
 
 func (h *HMSService) validation(req *notify.HMSPushNotification) error {
 	if req.MessageRequest == nil {
-		return errors.New("invalid request")
+		return errors.New("message request is empty")
 	}
 	return nil
 }
 
 // HTTP Connection Server Reference for HMS
 // https://developer.huawei.com/consumer/en/doc/development/HMS-References/push-sendapi
-func (h *HMSService) getNotification(req *notify.HMSPushNotification) (*model.MessageRequest, error) {
+func (h *HMSService) buildNotification(req *notify.HMSPushNotification) (*model.MessageRequest, error) {
 	msgRequest := model.NewNotificationMsgRequest()
 
 	msgRequest.Message.Android = model.GetDefaultAndroid()
@@ -181,6 +232,10 @@ func (h *HMSService) getNotification(req *notify.HMSPushNotification) (*model.Me
 		msgRequest.Message.Android.Notification.DefaultSound = true
 	}
 
+	if req.Development {
+		msgRequest.Message.Android.TargetUserType = 1
+	}
+
 	m, err := json.Marshal(msgRequest)
 	if err != nil {
 		log.Printf("Failed to marshal the default message! Error is " + err.Error())
@@ -189,18 +244,4 @@ func (h *HMSService) getNotification(req *notify.HMSPushNotification) (*model.Me
 
 	log.Printf("Default message is %s", string(m))
 	return msgRequest, nil
-}
-
-func NewHMSService(appID, appSecret string) *HMSService {
-	conf := &c.Config{
-		AppId:     appID,
-		AppSecret: appSecret,
-		AuthUrl:   "https://oauth-login.cloud.huawei.com/oauth2/v3/token",
-		PushUrl:   "https://push-api.cloud.huawei.com",
-	}
-	client, err := client.NewHttpClient(conf)
-	if err != nil {
-		panic(err)
-	}
-	return &HMSService{client: client}
 }

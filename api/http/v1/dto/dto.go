@@ -26,7 +26,7 @@ type HuaweiPushRequestData struct {
 	TTL         string
 	Type        string
 	Title       string
-	Body        string
+	Message     string
 	Category    string
 	Icon        string
 	Img         string
