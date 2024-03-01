@@ -1,6 +1,6 @@
 package notify
 
-import "github.com/msalihkarakasli/go-hms-push/push/model"
+import "github.com/cossim/go-hms-push/push/model"
 
 type HMSPushNotification struct {
 	Retry       int         `json:"retry,omitempty"`
@@ -22,4 +22,6 @@ type HMSPushNotification struct {
 	BiTag          string `json:"bi_tag,omitempty"`
 	FastAppTarget  int    `json:"fast_app_target,omitempty"`
 	MessageRequest *model.MessageRequest
+
+	Development bool `json:"development,omitempty"`
 }
