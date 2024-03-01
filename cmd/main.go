@@ -73,7 +73,6 @@ func main() {
 		return adapter.NewPushServiceAdapter(svc)
 	})
 
-	// 创建一个父上下文和取消函数
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
