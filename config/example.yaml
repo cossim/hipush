@@ -68,3 +68,11 @@ vivo:
     app_key: ""
     app_secret: ""
     max_retry: 5
+
+oppo:
+  - enabled: true
+    app_id: ""
+    app_key: ""
+    # 这里的secret是oppo的masterSecret，
+    app_secret: ""
+    max_retry: 5

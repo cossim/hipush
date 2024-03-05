@@ -1,5 +1,10 @@
 package dto
 
+import (
+	"github.com/cossim/hipush/internal/notify"
+	"time"
+)
+
 // ClickAction 点击行为
 type ClickAction struct {
 	Url    string
@@ -72,4 +77,30 @@ type VivoPushRequestData struct {
 	Message    string
 	Category   string
 	Data       map[string]string
+}
+
+type OppoPushRequestData struct {
+	Foreground bool
+	Title      string
+	Subtitle   string
+	Message    string
+	// IsTimed 是否限时展示，指示消息是否在特定时间范围内展示
+	IsTimed bool
+	// TimedDuration 限时展示时长，单位为秒，消息将在此时长内展示
+	TimedDuration int
+	// ValidityPeriod 消息有效时长，即推送服务缓存消息的时长，从消息创建是开始计算，最短为1小时，最长10天
+	ValidityPeriod int
+	// IsScheduled false为立即推送 true为定时推送
+	// 消息会在ScheduledStart-ScheduledEnd的时间段内随机展示
+	IsScheduled bool
+	// ScheduledStart 定时推送的开始时间，指定消息推送的开始时间
+	ScheduledStart time.Time
+	// ScheduledEnd 定时推送的结束时间，指定消息推送的结束时间
+	ScheduledEnd time.Time
+	// Icon 消息图标，用于在通知栏上显示的图标
+	Icon string
+	// ClickAction 点击动作
+	ClickAction notify.OppoClickAction
+	// 附加的自定义参数
+	Data map[string]string
 }

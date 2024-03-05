@@ -73,6 +73,14 @@ func main() {
 		return adapter.NewPushServiceAdapter(svc)
 	})
 
+	pushServiceFactory.Register(consts.PlatformOppo.String(), func() push.PushService {
+		svc, err := push.NewOppoService(cfg)
+		if err != nil {
+			panic(err)
+		}
+		return adapter.NewPushServiceAdapter(svc)
+	})
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

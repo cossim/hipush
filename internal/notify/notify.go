@@ -15,6 +15,15 @@ type ClickAction struct {
 	Content string `json:"content,omitempty"`
 }
 
+// PushOption 表示推送选项的结构体
+type PushOption struct {
+	// DryRun 只进行数据校验不实际推送，数据校验成功即为成功
+	DryRun bool `json:"dry_run,omitempty"`
+
+	// Retry 重试次数
+	Retry int `json:"retry,omitempty"`
+}
+
 // D provide string array
 type D map[string]interface{}
 

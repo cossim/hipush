@@ -20,6 +20,7 @@ require (
 )
 
 require (
+	github.com/316014408/oppo-push v0.0.0-20190427030828-462d62e6b171 // indirect
 	github.com/bitly/go-simplejson v0.5.1 // indirect
 	github.com/bytedance/sonic v1.10.0-rc // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect

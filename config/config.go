@@ -36,6 +36,14 @@ type VivoAppConfig struct {
 	MaxRetry  int    `yaml:"max_retry"`
 }
 
+type OppoAppConfig struct {
+	Enabled   bool   `yaml:"enabled"`
+	AppID     string `yaml:"app_id"`
+	AppKey    string `yaml:"app_key"`
+	AppSecret string `yaml:"app_secret"`
+	MaxRetry  int    `yaml:"max_retry"`
+}
+
 type AndroidAppConfig struct {
 	Enabled  bool   `yaml:"enabled"`
 	AppID    string `yaml:"app_id"`
@@ -50,6 +58,7 @@ type Config struct {
 	Huawei  []HuaweiAppConfig  `yaml:"huawei"`
 	Android []AndroidAppConfig `yaml:" android"`
 	Vivo    []VivoAppConfig    `yaml:"vivo"`
+	Oppo    []OppoAppConfig    `yaml:"oppo"`
 }
 
 type HTTPConfig struct {
