@@ -50,6 +50,16 @@ ios:
     key_id: ""
     team_id: ""
 
+android:
+  - enabled: true
+
+    appid: ""
+
+    # Firebase Admin SDK AccountKey.json
+    key_path: ""
+
+    max_retry: 0
+
 huawei:
   - enabled: true
     app_id: huawei-appid-1

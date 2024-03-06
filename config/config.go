@@ -48,6 +48,7 @@ type AndroidAppConfig struct {
 	Enabled  bool   `yaml:"enabled"`
 	AppID    string `yaml:"app_id"`
 	AppKey   string `yaml:"app_key"`
+	KeyPath  string `yaml:"key_path"`
 	MaxRetry int    `yaml:"max_retry"`
 }
 
@@ -71,7 +72,7 @@ type Config struct {
 	GRPC    GRPCConfig         `yaml:"grpc"`
 	IOS     []iOSAppConfig     `yaml:"ios"`
 	Huawei  []HuaweiAppConfig  `yaml:"huawei"`
-	Android []AndroidAppConfig `yaml:" android"`
+	Android []AndroidAppConfig `yaml:"android"`
 	Vivo    []VivoAppConfig    `yaml:"vivo"`
 	Oppo    []OppoAppConfig    `yaml:"oppo"`
 	Xiaomi  []XiaomiAppConfig  `yaml:"xiaomi"`

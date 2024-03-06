@@ -154,6 +154,32 @@ type MeizuPushRequestData struct {
 	Data map[string]string `json:"data,omitempty"`
 }
 
+type AndroidPushRequestData struct {
+	Title   string `json:"title,omitempty" binding:"required"`
+	Content string `json:"content,omitempty" binding:"required"`
+
+	// TTL 如果用户离线，设置消息在服务器保存的时间，单位：ms，服务器默认最长保留两周。
+	TTL int `json:"ttl,omitempty"`
+
+	NotifyType int `json:"notify_type,omitempty" json:"notify_type,omitempty"`
+
+	// Foreground 是否前台显示通知
+	Foreground bool `json:"foreground,omitempty"`
+
+	// IsScheduled 是否定时推送
+	IsScheduled bool `json:"scheduled,omitempty"`
+	// ScheduledStartTime 定时展示开始时间(yyyy-MM-dd HH:mm:ss)
+	ScheduledStartTime string `json:"scheduled_start_time"`
+	// ScheduledEndTime 定时展示结束时间(yyyy-MM-dd HH:mm:ss)
+	ScheduledEndTime string `json:"scheduled_end_time"`
+
+	// ClickAction 点击动作
+	ClickAction ClickAction `json:"click_action"`
+
+	// 附加的自定义参数
+	Data map[string]string `json:"data,omitempty"`
+}
+
 type ClickAction struct {
 	// Action 点击行为
 	// 不同的厂商有不同的定义

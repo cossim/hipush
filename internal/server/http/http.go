@@ -84,6 +84,8 @@ func (h *Handler) pushHandler(c *gin.Context) {
 	switch consts.Platform(req.Platform) {
 	case consts.PlatformIOS:
 		h.handleIOSPush(c, req)
+	case consts.PlatformAndroid:
+		h.handleAndroidPush(c, req)
 	case consts.PlatformHuawei:
 		h.handleHuaweiPush(c, req)
 	case consts.PlatformVivo:
