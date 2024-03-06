@@ -24,6 +24,9 @@ const (
 
 	// PlatformOppo 表示 Oppo 平台
 	PlatformOppo Platform = "oppo"
+
+	// PlatformMeizu 表示魅族平台
+	PlatformMeizu Platform = "meizu"
 )
 
 // String converts the enum value to its string representation.
@@ -41,6 +44,8 @@ func (p Platform) String() string {
 		return "vivo"
 	case PlatformOppo:
 		return "oppo"
+	case PlatformMeizu:
+		return "meizu"
 	default:
 		return "unknown"
 	}

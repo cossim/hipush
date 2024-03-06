@@ -1,11 +1,12 @@
 module github.com/cossim/hipush
 
-go 1.20
+go 1.22.0
 
 require (
 	github.com/316014408/oppo-push v0.0.0-20190427030828-462d62e6b171
 	github.com/appleboy/go-fcm v0.1.6
 	github.com/cossim/go-hms-push v0.0.0-20240301034220-38310a1d80e5
+	github.com/cossim/go-meizu-push-sdk v0.0.0-20240306071207-456c3a8650c6
 	github.com/cossim/vivo-push v0.0.0-20240301025332-148acd987861
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-logr/logr v1.4.1
@@ -26,6 +27,7 @@ require (
 	github.com/bytedance/sonic v1.10.0-rc // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
 	github.com/chenzhuoyu/iasm v0.9.0 // indirect
+	github.com/ddliu/go-httpclient v0.7.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect

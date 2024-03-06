@@ -89,6 +89,14 @@ func main() {
 		return adapter.NewPushServiceAdapter(svc)
 	})
 
+	pushServiceFactory.Register(consts.PlatformMeizu.String(), func() push.PushService {
+		svc, err := push.NewMeizuService(cfg)
+		if err != nil {
+			panic(err)
+		}
+		return adapter.NewPushServiceAdapter(svc)
+	})
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

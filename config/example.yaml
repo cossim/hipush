@@ -84,3 +84,10 @@ xiaomi:
       - xxx.xx.xx
     app_secret: ""
     max_retry: 5
+
+meizu:
+  - enabled: true
+    app_id: "2882303761520159644"
+    package: ""
+    app_key: ""
+    max_retry: 5

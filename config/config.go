@@ -59,6 +59,13 @@ type XiaomiAppConfig struct {
 	MaxRetry  int      `yaml:"max_retry"`
 }
 
+type MeizuAppConfig struct {
+	Enabled  bool   `yaml:"enabled"`
+	AppID    string `yaml:"app_id"`
+	AppKey   string `yaml:"app_key"`
+	MaxRetry int    `yaml:"max_retry"`
+}
+
 type Config struct {
 	HTTP    HTTPConfig         `yaml:"http"`
 	GRPC    GRPCConfig         `yaml:"grpc"`
@@ -68,6 +75,7 @@ type Config struct {
 	Vivo    []VivoAppConfig    `yaml:"vivo"`
 	Oppo    []OppoAppConfig    `yaml:"oppo"`
 	Xiaomi  []XiaomiAppConfig  `yaml:"xiaomi"`
+	Meizu   []MeizuAppConfig   `yaml:"meizu"`
 }
 
 type HTTPConfig struct {
