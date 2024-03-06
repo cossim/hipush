@@ -1,117 +1,213 @@
 package push
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
+	"errors"
 	"fmt"
-	"net/http"
+	"github.com/cossim/hipush/config"
+	"github.com/cossim/hipush/internal/notify"
+	xp "github.com/yilee/xiaomi-push"
+	"log"
 	"strings"
+	"sync"
 )
 
-// MiPushService 实现小米推送服务的具体逻辑
-type MiPushService struct {
-	AppSecret  string // 小米 App Secret
-	Endpoint   string // 小米推送 API 端点
-	APIVersion string // 小米推送 API 版本
+var (
+	MaxConcurrentXiaomiPushes = make(chan struct{}, 100)
+)
+
+// XiaomiPushService 小米推送 实现PushService接口
+type XiaomiPushService struct {
+	clients map[string]*xp.MiPush
 }
 
-// 推送消息结构体
-type XiaomiMessage struct {
-	RegistrationID string `json:"registration_id,omitempty"`
-	Alias          string `json:"alias,omitempty"`
-	UserAccount    string `json:"user_account,omitempty"`
-	Topic          string `json:"topic,omitempty"`
-	Topics         string `json:"topics,omitempty"`
-	TopicOp        string `json:"topic_op,omitempty"`
-	Payload        string `json:"payload"`
-	Title          string `json:"title,omitempty"`
-	Description    string `json:"description,omitempty"`
-	NotifyType     int    `json:"notify_type,omitempty"`
-	TimeToLive     int64  `json:"time_to_live,omitempty"`
-	NotifyID       int    `json:"notify_id,omitempty"`
-	Extra          struct {
-		SoundURI         string `json:"sound_uri,omitempty"`
-		Ticker           string `json:"ticker,omitempty"`
-		NotifyForeground string `json:"notify_foreground,omitempty"`
-		NotifyEffect     string `json:"notify_effect,omitempty"`
-		IntentURI        string `json:"intent_uri,omitempty"`
-		WebURI           string `json:"web_uri,omitempty"`
-	} `json:"extra,omitempty"`
-}
-
-// 发送单条消息
-func (m *MiPushService) Send(message string, receiver string) error {
-	return m.sendToEndpoint("/message/regid", message, receiver)
-}
-
-// 发送多条消息
-func (m *MiPushService) MulticastSend(message string, receivers []string) error {
-	return m.sendToEndpoint("/message/regid", message, strings.Join(receivers, ","))
-}
-
-// 订阅主题
-func (m *MiPushService) Subscribe(topic string, receiver string) error {
-	return m.sendToEndpoint("/topic/subscribe", topic, receiver)
-}
-
-// 取消订阅主题
-func (m *MiPushService) Unsubscribe(topic string, receiver string) error {
-	return m.sendToEndpoint("/topic/unsubscribe", topic, receiver)
-}
-
-// 向指定主题发送消息
-func (m *MiPushService) SendToTopic(message string, topic string) error {
-	return m.sendToEndpoint("/message/topic", message, topic)
-}
-
-// 向指定条件发送消息
-func (m *MiPushService) SendToCondition(message string, condition string) error {
-	return m.sendToEndpoint("/message/condition", message, condition)
-}
-
-// 检查设备可用性
-func (m *MiPushService) CheckDevice(deviceToken string) bool {
-	// 此处暂不实现，直接返回 true
-	return true
-}
-
-// 获取推送服务名称
-func (m *MiPushService) Name() string {
-	return "MiPushService"
-}
-
-// 发送消息到指定端点
-func (m *MiPushService) sendToEndpoint(endpoint, message, receiver string) error {
-	url := m.Endpoint + m.APIVersion + endpoint
-
-	xiaomiMessage := XiaomiMessage{
-		RegistrationID: receiver,
-		Payload:        message,
+func NewXiaomiService(cfg *config.Config) (*XiaomiPushService, error) {
+	s := &XiaomiPushService{
+		clients: map[string]*xp.MiPush{},
 	}
 
-	jsonStr, err := json.Marshal(xiaomiMessage)
+	for _, v := range cfg.Xiaomi {
+		if !v.Enabled || v.Enabled && v.AppSecret == "" {
+			return nil, errors.New("push not enabled or misconfigured")
+		}
+		client := xp.NewClient(v.AppSecret, v.Package)
+		s.clients[v.AppID] = client
+	}
+
+	return s, nil
+}
+
+func (x *XiaomiPushService) Send(ctx context.Context, request interface{}, opt SendOption) error {
+	req, ok := request.(*notify.XiaomiPushNotification)
+	if !ok {
+		return errors.New("invalid request")
+	}
+
+	var (
+		retry      = opt.Retry
+		maxRetry   = retry
+		retryCount = 0
+		es         []error
+	)
+
+	if err := x.checkNotification(req); err != nil {
+		return err
+	}
+
+	notification, err := x.buildNotification(req)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
-	if err != nil {
-		return err
+	if opt.DryRun {
+		return nil
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("key=%s", m.AppSecret))
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
+	for {
+		newTokens, err := x.send(ctx, req.AppID, req.Tokens, notification)
+		if err != nil {
+			log.Printf("sendNotifications error => %v", err)
+			es = append(es, err)
+		}
+		// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
+		if len(newTokens) > 0 && retryCount < maxRetry {
+			retryCount++
+			req.Tokens = newTokens
+		} else {
+			break
+		}
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("server returned non-OK status: %s", resp.Status)
+	var errorMsgs []string
+	for _, err := range es {
+		errorMsgs = append(errorMsgs, err.Error())
+	}
+	if len(errorMsgs) > 0 {
+		return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
+	}
+	return nil
+}
+
+func (x *XiaomiPushService) checkNotification(req *notify.XiaomiPushNotification) error {
+	if len(req.Tokens) == 0 {
+		return errors.New("tokens cannot be empty")
+	}
+
+	if req.Title == "" {
+		return errors.New("title cannot be empty")
+	}
+
+	if req.Content == "" {
+		return errors.New("content cannot be empty")
+	}
+
+	if req.IsScheduled && req.ScheduledTime == 0 {
+		return errors.New("scheduled time cannot be empty")
 	}
 
 	return nil
+}
+
+func (x *XiaomiPushService) buildNotification(req *notify.XiaomiPushNotification) (*xp.Message, error) {
+	msg := xp.NewAndroidMessage(req.Title, req.Content).SetPayload("this is payload1")
+
+	if req.NotifyType != 0 {
+		msg.SetNotifyType(int32(req.NotifyType))
+	}
+
+	if req.TTL != 0 {
+		msg.SetTimeToLive(req.TTL)
+	}
+
+	if req.IsScheduled && req.ScheduledTime != 0 {
+		msg.SetTimeToSend(int64(req.ScheduledTime))
+	}
+
+	return msg, nil
+}
+
+func (x *XiaomiPushService) send(ctx context.Context, appID string, tokens []string, message *xp.Message) ([]string, error) {
+	var newTokens []string
+	var wg sync.WaitGroup
+	client, ok := x.clients[appID]
+	if !ok {
+		return nil, errors.New("invalid appid or appid push is not enabled")
+	}
+
+	var es []error
+
+	for _, token := range tokens {
+		// occupy push slot
+		MaxConcurrentXiaomiPushes <- struct{}{}
+		wg.Add(1)
+		go func(notification *xp.Message, token string) {
+			defer func() {
+				// free push slot
+				<-MaxConcurrentXiaomiPushes
+				wg.Done()
+			}()
+
+			fmt.Println("notification => ", notification)
+			res, err := client.Send(ctx, notification, token)
+			if err != nil || (res != nil && res.Code != 0) {
+				if err == nil {
+					err = errors.New(res.Reason)
+				} else {
+					es = append(es, err)
+				}
+				// 记录失败的 Token
+				if res != nil && res.Code != 0 {
+					newTokens = append(newTokens, token)
+				}
+				log.Printf("oppo send error: %s", err)
+			} else {
+				log.Printf("oppo send success: %s", res.Reason)
+			}
+		}(message, token)
+	}
+	wg.Wait()
+	if len(es) > 0 {
+		var errorStrings []string
+		for _, err := range es {
+			errorStrings = append(errorStrings, err.Error())
+		}
+		allErrorsString := strings.Join(errorStrings, ", ")
+		return nil, errors.New(allErrorsString)
+	}
+	return newTokens, nil
+}
+
+func (x *XiaomiPushService) MulticastSend(ctx context.Context, req interface{}) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (x *XiaomiPushService) Subscribe(ctx context.Context, req interface{}) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (x *XiaomiPushService) Unsubscribe(ctx context.Context, req interface{}) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (x *XiaomiPushService) SendToTopic(ctx context.Context, req interface{}) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (x *XiaomiPushService) SendToCondition(ctx context.Context, req interface{}) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (x *XiaomiPushService) CheckDevice(ctx context.Context, req interface{}) bool {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (x *XiaomiPushService) Name() string {
+	//TODO implement me
+	panic("implement me")
 }

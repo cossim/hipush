@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/cossim/hipush/api/http/v1/dto"
 	"github.com/cossim/hipush/internal/notify"
+	"github.com/cossim/hipush/internal/push"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -48,7 +49,7 @@ func (h *Handler) handleIOSPush(c *gin.Context, req *dto.PushRequest) {
 		Data:             r.Data,
 		Expiration:       nil,
 	}
-	if err := service.Send(c, rr); err != nil {
+	if err := service.Send(c, rr, push.SendOption{}); err != nil {
 		h.logger.Error(err, "Failed to send push notification")
 		c.JSON(http.StatusInternalServerError, Response{Code: http.StatusBadRequest, Msg: err.Error(), Data: nil})
 		return

@@ -90,6 +90,8 @@ func (h *Handler) pushHandler(c *gin.Context) {
 		h.handleVivoPush(c, req)
 	case consts.PlatformOppo:
 		h.handleOppoPush(c, req)
+	case consts.PlatformXiaomi:
+		h.handleXiaomiPush(c, req)
 	default:
 		c.JSON(http.StatusBadRequest, Response{Code: http.StatusBadRequest, Msg: "invalid platform", Data: nil})
 	}

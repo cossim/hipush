@@ -3,6 +3,7 @@ module github.com/cossim/hipush
 go 1.20
 
 require (
+	github.com/316014408/oppo-push v0.0.0-20190427030828-462d62e6b171
 	github.com/appleboy/go-fcm v0.1.6
 	github.com/cossim/go-hms-push v0.0.0-20240301034220-38310a1d80e5
 	github.com/cossim/vivo-push v0.0.0-20240301025332-148acd987861
@@ -13,6 +14,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/sideshow/apns2 v0.23.0
+	github.com/yilee/xiaomi-push v0.0.0-20170213073944-562fbb07388e
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.62.0
 	google.golang.org/protobuf v1.32.0
@@ -20,7 +22,6 @@ require (
 )
 
 require (
-	github.com/316014408/oppo-push v0.0.0-20190427030828-462d62e6b171 // indirect
 	github.com/bitly/go-simplejson v0.5.1 // indirect
 	github.com/bytedance/sonic v1.10.0-rc // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect

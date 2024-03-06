@@ -36,14 +36,14 @@ func NewVivoService(cfg *config.Config) (*VivoService, error) {
 	return s, nil
 }
 
-func (v *VivoService) Send(ctx context.Context, request interface{}) error {
+func (v *VivoService) Send(ctx context.Context, request interface{}, opt SendOption) error {
 	req, ok := request.(*notify.VivoPushNotification)
 	if !ok {
 		return errors.New("invalid request")
 	}
 
 	var (
-		retry      = req.Retry
+		retry      = opt.Retry
 		maxRetry   = retry
 		retryCount = 0
 	)

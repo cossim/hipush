@@ -81,6 +81,14 @@ func main() {
 		return adapter.NewPushServiceAdapter(svc)
 	})
 
+	pushServiceFactory.Register(consts.PlatformXiaomi.String(), func() push.PushService {
+		svc, err := push.NewXiaomiService(cfg)
+		if err != nil {
+			panic(err)
+		}
+		return adapter.NewPushServiceAdapter(svc)
+	})
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

@@ -59,7 +59,7 @@ func NewHMSService(cfg *config.Config) (*HMSService, error) {
 	return s, nil
 }
 
-func (h *HMSService) Send(ctx context.Context, request interface{}) error {
+func (h *HMSService) Send(ctx context.Context, request interface{}, opt SendOption) error {
 	req, ok := request.(*notify.HMSPushNotification)
 	if !ok {
 		return errors.New("invalid request parameter")
@@ -195,7 +195,7 @@ func (h *HMSService) buildNotification(req *notify.HMSPushNotification) (*model.
 		msgRequest.Message.Data = req.Data
 	}
 
-	// Notification Message
+	// Notification Content
 	if req.MessageRequest.Message.Android.Notification != nil {
 		msgRequest.Message.Android.Notification = req.MessageRequest.Message.Android.Notification
 

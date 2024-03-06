@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v4.25.1
-// source: api/grpc/v1/push.proto
+// source: push.proto
 
 package v1
 
@@ -47,21 +47,19 @@ func (c *pushServiceClient) Push(ctx context.Context, in *PushRequest, opts ...g
 }
 
 // PushServiceServer is the server API for PushService service.
-// All implementations must embed UnimplementedPushServiceServer
+// All implementations should embed UnimplementedPushServiceServer
 // for forward compatibility
 type PushServiceServer interface {
 	Push(context.Context, *PushRequest) (*PushResponse, error)
-	mustEmbedUnimplementedPushServiceServer()
 }
 
-// UnimplementedPushServiceServer must be embedded to have forward compatible implementations.
+// UnimplementedPushServiceServer should be embedded to have forward compatible implementations.
 type UnimplementedPushServiceServer struct {
 }
 
 func (UnimplementedPushServiceServer) Push(context.Context, *PushRequest) (*PushResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Push not implemented")
 }
-func (UnimplementedPushServiceServer) mustEmbedUnimplementedPushServiceServer() {}
 
 // UnsafePushServiceServer may be embedded to opt out of forward compatibility for this service.
 // Use of this interface is not recommended, as added methods to PushServiceServer will
@@ -105,5 +103,5 @@ var PushService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/grpc/v1/push.proto",
+	Metadata: "push.proto",
 }

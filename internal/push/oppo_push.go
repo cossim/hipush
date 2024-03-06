@@ -12,6 +12,10 @@ import (
 	"sync"
 )
 
+var (
+	MaxConcurrentOppoPushes = make(chan struct{}, 100)
+)
+
 // OppoService 实现vivo推送，必须实现PushService接口
 type OppoService struct {
 	clients map[string]*op.OppoPush
@@ -33,14 +37,14 @@ func NewOppoService(cfg *config.Config) (*OppoService, error) {
 	return s, nil
 }
 
-func (o *OppoService) Send(ctx context.Context, request interface{}) error {
+func (o *OppoService) Send(ctx context.Context, request interface{}, opt SendOption) error {
 	req, ok := request.(*notify.OppoPushNotification)
 	if !ok {
 		return errors.New("invalid request")
 	}
 
 	var (
-		retry      = req.Option.Retry
+		retry      = opt.Retry
 		maxRetry   = retry
 		retryCount = 0
 	)
@@ -64,7 +68,7 @@ func (o *OppoService) Send(ctx context.Context, request interface{}) error {
 		return err
 	}
 
-	if req.Option.DryRun {
+	if opt.DryRun {
 		return nil
 	}
 
@@ -106,12 +110,12 @@ func (o *OppoService) send(appID string, tokens []string, message *op.Message) (
 
 	for _, token := range tokens {
 		// occupy push slot
-		MaxConcurrentIOSPushes <- struct{}{}
+		MaxConcurrentOppoPushes <- struct{}{}
 		wg.Add(1)
 		go func(notification *op.Message, token string) {
 			defer func() {
 				// free push slot
-				<-MaxConcurrentIOSPushes
+				<-MaxConcurrentOppoPushes
 				wg.Done()
 			}()
 

@@ -76,3 +76,11 @@ oppo:
     # 这里的secret是oppo的masterSecret，
     app_secret: ""
     max_retry: 5
+
+xiaomi:
+  - enabled: true
+    app_id: ""
+    package:
+      - xxx.xx.xx
+    app_secret: ""
+    max_retry: 5

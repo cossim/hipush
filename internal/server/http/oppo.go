@@ -5,6 +5,7 @@ import (
 	"github.com/cossim/hipush/api/http/v1/dto"
 	"github.com/cossim/hipush/internal/consts"
 	"github.com/cossim/hipush/internal/notify"
+	"github.com/cossim/hipush/internal/push"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -43,7 +44,7 @@ func (h *Handler) handleOppoPush(c *gin.Context, req *dto.PushRequest) {
 			Retry:  req.Option.Retry,
 		},
 	}
-	if err := service.Send(c, rr); err != nil {
+	if err := service.Send(c, rr, push.SendOption{}); err != nil {
 		c.JSON(http.StatusInternalServerError, Response{Code: http.StatusBadRequest, Msg: err.Error(), Data: nil})
 		return
 	}

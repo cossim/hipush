@@ -133,7 +133,7 @@ var DialTLS = func(cfg *tls.Config) func(network, addr string) (net.Conn, error)
 	}
 }
 
-func (a *APNsService) Send(ctx context.Context, request interface{}) error {
+func (a *APNsService) Send(ctx context.Context, request interface{}, opt SendOption) error {
 	req, ok := request.(*notify.ApnsPushNotification)
 	if !ok {
 		return errors.New("invalid request")

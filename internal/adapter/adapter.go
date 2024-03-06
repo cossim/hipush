@@ -13,8 +13,8 @@ func NewPushServiceAdapter(pushService push.PushService) *PushServiceAdapter {
 	return &PushServiceAdapter{pushService: pushService}
 }
 
-func (p *PushServiceAdapter) Send(ctx context.Context, req interface{}) error {
-	return p.pushService.Send(ctx, req)
+func (p *PushServiceAdapter) Send(ctx context.Context, req interface{}, opt push.SendOption) error {
+	return p.pushService.Send(ctx, req, opt)
 }
 
 func (p *PushServiceAdapter) MulticastSend(ctx context.Context, req interface{}) error {

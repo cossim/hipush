@@ -90,11 +90,18 @@ type PushRequest interface {
 	GetInterruptionLevel() string
 }
 
+type SendOption struct {
+	// DryRun 只进行数据校验不实际推送，数据校验成功即为成功
+	DryRun bool `json:"dry_run,omitempty"`
+	// Retry 重试次数
+	Retry int `json:"retry,omitempty"`
+}
+
 type PushService interface {
 	// 发送消息给单个设备
 	//Send(ctx context.Context, req PushRequest) error
 
-	Send(ctx context.Context, req interface{}) error
+	Send(ctx context.Context, req interface{}, opt SendOption) error
 
 	// 发送消息给多个设备
 	MulticastSend(ctx context.Context, req interface{}) error

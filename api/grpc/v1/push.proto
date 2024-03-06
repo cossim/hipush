@@ -2,7 +2,9 @@ syntax = "proto3";
 import "google/protobuf/struct.proto";
 
 package v1;
-option go_package = "github.com/cossim/hipush/api/grpc/v1";
+//option go_package = "github.com/cossim/hipush/api/grpc/v1";
+option go_package = "./;v1";
+
 
 message Alert {
   string title = 1;
@@ -43,11 +45,21 @@ message PushRequest {
   bool mutableContent = 13;
   // default is production
   bool development = 20;
+
+  PushOption Option = 21;
 }
 
 message PushResponse {
   bool success = 1;
   int32 counts = 2;
+}
+
+message PushOption {
+  // DryRun 只进行数据校验不实际推送，数据校验成功即为成功
+  bool DryRun = 1;
+
+  // Retry 重试次数
+  int32 Retry = 2;
 }
 
 service PushService {

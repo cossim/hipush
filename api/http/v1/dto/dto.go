@@ -5,12 +5,6 @@ import (
 	"time"
 )
 
-// ClickAction 点击行为
-type ClickAction struct {
-	Url    string
-	Action Action // 点击行为类型
-}
-
 // Action 枚举表示点击行为类型
 type Action int
 
@@ -103,4 +97,48 @@ type OppoPushRequestData struct {
 	ClickAction notify.OppoClickAction
 	// 附加的自定义参数
 	Data map[string]string
+}
+
+type XiaomiPushRequestData struct {
+	// Foreground 是否前台显示通知
+	Foreground bool   `json:"foreground,omitempty"`
+	Title      string `json:"title,omitempty" binding:"required"`
+	Subtitle   string `json:"subtitle,omitempty"`
+	Content    string `json:"content,omitempty" binding:"required"`
+
+	// Icon 消息图标，用于在通知栏上显示的图标
+	Icon string `json:"icon,omitempty"`
+
+	// TTL 如果用户离线，设置消息在服务器保存的时间，单位：ms，服务器默认最长保留两周。
+	TTL time.Duration `json:"ttl,omitempty"`
+
+	// IsScheduled false为立即推送 true为定时推送
+	// 消息会在ScheduledStart-ScheduledEnd的时间段内随机展示
+	IsScheduled bool `json:"is_scheduled,omitempty"`
+	// ScheduledTime 定时推送的开始时间，指定消息推送的开始时间
+	// 用自1970年1月1日以来00:00:00.0 UTC时间表示（以毫秒为单位的时间），仅支持七天内的定时消息。
+	ScheduledTime time.Duration `json:"scheduled_time,omitempty"`
+
+	NotifyType int `json:"notify_type,omitempty" json:"notify_type,omitempty"`
+
+	// ClickAction 点击动作
+	ClickAction ClickAction `json:"click_action"`
+
+	// 附加的自定义参数
+	Data map[string]string `json:"data,omitempty"`
+}
+
+type ClickAction struct {
+	// Action 点击行为
+	// 不同的厂商有不同的定义
+	Action int `json:"action,omitempty"`
+
+	// Activity 打开应用内页（activity 的 intent action）
+	Activity string `json:"activity,omitempty"`
+
+	// Url 打开网页的地址
+	Url string `json:"url,omitempty"`
+
+	// Parameters url跳转后传的参数拼接在url后面
+	Parameters string `json:"parameters,omitempty"`
 }

@@ -34,7 +34,7 @@ func NewFCMService(cfg *config.Config) (*FCMService, error) {
 	return s, nil
 }
 
-func (f *FCMService) Send(ctx context.Context, request interface{}) error {
+func (f *FCMService) Send(ctx context.Context, request interface{}, opt SendOption) error {
 	req, ok := request.(*notify.FCMPushNotification)
 	if !ok {
 		return errors.New("invalid request")
@@ -90,7 +90,7 @@ Retry:
 		if to == "" {
 			to = req.Condition
 		}
-		log.Printf("Topic Message: %s", to)
+		log.Printf("Topic Content: %s", to)
 	}
 
 	// Device Group HTTP Response
