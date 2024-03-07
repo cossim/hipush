@@ -5,14 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cossim/hipush/config"
-	"github.com/cossim/hipush/internal/notify"
+	"github.com/cossim/hipush/notify"
 	vp "github.com/cossim/vivo-push"
 	"log"
 	"strings"
 	"sync"
 )
 
-// VivoService 实现vivo推送，必须实现PushService接口
+// VivoService 实现vivo推送，实现 PushService 接口
 type VivoService struct {
 	clients map[string]*vp.VivoPush
 }
@@ -36,27 +36,25 @@ func NewVivoService(cfg *config.Config) (*VivoService, error) {
 	return s, nil
 }
 
-func (v *VivoService) Send(ctx context.Context, request interface{}, opt SendOption) error {
+func (v *VivoService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {
 	req, ok := request.(*notify.VivoPushNotification)
 	if !ok {
 		return errors.New("invalid request")
 	}
 
+	so := &SendOptions{}
+	so.ApplyOptions(opt)
+
 	var (
-		retry      = opt.Retry
+		retry      = so.Retry
 		maxRetry   = retry
 		retryCount = 0
+		es         []error
 	)
 
-	// 重试计数
-	if maxRetry <= 0 {
-		maxRetry = DefaultMaxRetry // 设置一个默认的最大重试次数
-	}
 	if retry > 0 && retry < maxRetry {
 		maxRetry = retry
 	}
-
-	var es []error
 
 	for {
 		newTokens, err := v.send(req)
@@ -201,32 +199,27 @@ func (v *VivoService) buildNotification(req *notify.VivoPushNotification) (*vp.M
 	return message, nil
 }
 
-func (v *VivoService) MulticastSend(ctx context.Context, req interface{}) error {
+func (v *VivoService) SendMulticast(ctx context.Context, req interface{}, opt ...MulticastOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (v *VivoService) Subscribe(ctx context.Context, req interface{}) error {
+func (v *VivoService) Subscribe(ctx context.Context, req interface{}, opt ...SubscribeOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (v *VivoService) Unsubscribe(ctx context.Context, req interface{}) error {
+func (v *VivoService) Unsubscribe(ctx context.Context, req interface{}, opt ...UnsubscribeOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (v *VivoService) SendToTopic(ctx context.Context, req interface{}) error {
+func (v *VivoService) SendToTopic(ctx context.Context, req interface{}, opt ...TopicOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (v *VivoService) SendToCondition(ctx context.Context, req interface{}) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (v *VivoService) CheckDevice(ctx context.Context, req interface{}) bool {
+func (v *VivoService) CheckDevice(ctx context.Context, req interface{}, opt ...CheckDeviceOption) bool {
 	//TODO implement me
 	panic("implement me")
 }

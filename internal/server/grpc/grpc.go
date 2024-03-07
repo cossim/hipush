@@ -9,8 +9,8 @@ import (
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/internal/consts"
 	"github.com/cossim/hipush/internal/factory"
-	"github.com/cossim/hipush/internal/notify"
-	"github.com/cossim/hipush/internal/push"
+	"github.com/cossim/hipush/notify"
+	"github.com/cossim/hipush/push"
 	"github.com/go-logr/logr"
 	"github.com/golang/protobuf/jsonpb"
 	"google.golang.org/grpc"
@@ -81,7 +81,7 @@ func (h *Handler) Push(ctx context.Context, req *v1.PushRequest) (*v1.PushRespon
 		return nil, err
 	}
 
-	if err := service.Send(ctx, r, push.SendOption{
+	if err := service.Send(ctx, r, &push.SendOptions{
 		DryRun: req.Option.DryRun,
 		Retry:  int(req.Option.Retry),
 	}); err != nil {
@@ -127,7 +127,7 @@ func (h *Handler) getPushRequest(req *v1.PushRequest) (push.PushRequest, error) 
 		ApnsID:           req.AppID,
 		Tokens:           req.Tokens,
 		Title:            req.Title,
-		Message:          req.Message,
+		Content:          req.Message,
 		Topic:            req.Topic,
 		Category:         req.Category,
 		Sound:            req.Sound,

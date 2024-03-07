@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"github.com/cossim/hipush/api/http/v1/dto"
 	"github.com/cossim/hipush/internal/consts"
-	"github.com/cossim/hipush/internal/notify"
-	"github.com/cossim/hipush/internal/push"
+	"github.com/cossim/hipush/notify"
+	"github.com/cossim/hipush/push"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"net/http"
@@ -49,7 +49,7 @@ func (h *Handler) handleVivoPush(c *gin.Context, req *dto.PushRequest) {
 		Foreground:  r.Foreground,
 		Development: true,
 	}
-	if err := service.Send(c, rr, push.SendOption{}); err != nil {
+	if err := service.Send(c, rr, &push.SendOptions{}); err != nil {
 		c.JSON(http.StatusInternalServerError, Response{Code: http.StatusBadRequest, Msg: err.Error(), Data: nil})
 		return
 	}

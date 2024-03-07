@@ -5,15 +5,14 @@ import (
 	"errors"
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/messaging"
-	"fmt"
 	"github.com/cossim/hipush/config"
-	"github.com/cossim/hipush/internal/notify"
+	"github.com/cossim/hipush/notify"
 	"google.golang.org/api/option"
 	"log"
 	"strings"
 )
 
-// FCMService 谷歌安卓推送
+// FCMService 谷歌安卓推送，实现了 PushService 接口
 type FCMService struct {
 	clients map[string]*messaging.Client
 }
@@ -40,10 +39,12 @@ func NewFCMService(cfg *config.Config) (*FCMService, error) {
 	s := &FCMService{
 		clients: make(map[string]*messaging.Client),
 	}
-	fmt.Println("cfg.Android => ", cfg.Android)
+
 	for _, v := range cfg.Android {
-		fmt.Println(" v => ", v)
-		if !v.Enabled || v.Enabled && v.KeyPath == "" {
+		if !v.Enabled {
+			continue
+		}
+		if v.Enabled && v.KeyPath == "" {
 			return nil, errors.New("push not enabled or misconfigured")
 		}
 
@@ -63,7 +64,7 @@ func NewFCMService(cfg *config.Config) (*FCMService, error) {
 	return s, nil
 }
 
-func (f *FCMService) Send(ctx context.Context, request interface{}, opt SendOption) error {
+func (f *FCMService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {
 	req, ok := request.(*notify.FCMPushNotification)
 	if !ok {
 		return errors.New("invalid request")
@@ -71,17 +72,23 @@ func (f *FCMService) Send(ctx context.Context, request interface{}, opt SendOpti
 
 	// 设置一个默认的最大重试次数
 	var maxRetry = req.Retry
+	var retryCount int
 	if maxRetry <= 0 {
 		maxRetry = DefaultMaxRetry
 	}
 
-	if err := f.validation(req); err != nil {
+	so := &SendOptions{}
+	so.ApplyOptions(opt)
+
+	if err := f.checkNotification(req); err != nil {
 		return err
 	}
 
-	var retryCount int
+	notification := f.buildAndroidNotification(req)
 
-	fmt.Println("req.AppID =?> ", req.AppID)
+	if so.DryRun {
+		return nil
+	}
 
 	client, ok := f.clients[req.AppID]
 	if !ok {
@@ -89,7 +96,6 @@ func (f *FCMService) Send(ctx context.Context, request interface{}, opt SendOpti
 	}
 
 Retry:
-	notification := f.buildAndroidNotification(req)
 	res, err := client.Send(ctx, notification)
 	if err != nil {
 		log.Printf("FCM server send message error: %s", err)
@@ -139,8 +145,8 @@ Retry:
 	return nil
 }
 
-// validation for check request message
-func (f *FCMService) validation(req *notify.FCMPushNotification) error {
+// checkNotification for check request message
+func (f *FCMService) checkNotification(req *notify.FCMPushNotification) error {
 	var msg string
 
 	// ignore send topic mesaage from FCM
@@ -233,32 +239,27 @@ func (f *FCMService) buildAndroidNotification(req *notify.FCMPushNotification) *
 	return notification
 }
 
-func (f *FCMService) MulticastSend(ctx context.Context, req interface{}) error {
+func (f *FCMService) SendMulticast(ctx context.Context, req interface{}, opt ...MulticastOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (f *FCMService) Subscribe(ctx context.Context, req interface{}) error {
+func (f *FCMService) Subscribe(ctx context.Context, req interface{}, opt ...SubscribeOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (f *FCMService) Unsubscribe(ctx context.Context, req interface{}) error {
+func (f *FCMService) Unsubscribe(ctx context.Context, req interface{}, opt ...UnsubscribeOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (f *FCMService) SendToTopic(ctx context.Context, req interface{}) error {
+func (f *FCMService) SendToTopic(ctx context.Context, req interface{}, opt ...TopicOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (f *FCMService) SendToCondition(ctx context.Context, req interface{}) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (f *FCMService) CheckDevice(ctx context.Context, req interface{}) bool {
+func (f *FCMService) CheckDevice(ctx context.Context, req interface{}, opt ...CheckDeviceOption) bool {
 	//TODO implement me
 	panic("implement me")
 }

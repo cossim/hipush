@@ -7,7 +7,7 @@ import (
 	"fmt"
 	mzp "github.com/cossim/go-meizu-push-sdk"
 	"github.com/cossim/hipush/config"
-	"github.com/cossim/hipush/internal/notify"
+	"github.com/cossim/hipush/notify"
 	"log"
 	"strings"
 	"sync"
@@ -17,7 +17,7 @@ var (
 	MaxConcurrentMeizuPushes = make(chan struct{}, 100)
 )
 
-// MeizuService 实现vivo推送，必须实现PushService接口
+// MeizuService 实现魅族推送，实现 PushService 接口
 type MeizuService struct {
 	clients map[string]func(token, message string) mzp.PushResponse
 }
@@ -41,27 +41,25 @@ func NewMeizuService(cfg *config.Config) (*MeizuService, error) {
 	return s, nil
 }
 
-func (m *MeizuService) Send(ctx context.Context, request interface{}, opt SendOption) error {
+func (m *MeizuService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {
 	req, ok := request.(*notify.MeizuPushNotification)
 	if !ok {
 		return errors.New("invalid request")
 	}
 
+	so := &SendOptions{}
+	so.ApplyOptions(opt)
+
 	var (
-		retry      = opt.Retry
+		retry      = so.Retry
 		maxRetry   = retry
 		retryCount = 0
+		es         []error
 	)
 
-	// 重试计数
-	if maxRetry <= 0 {
-		maxRetry = DefaultMaxRetry // 设置一个默认的最大重试次数
-	}
 	if retry > 0 && retry < maxRetry {
 		maxRetry = retry
 	}
-
-	var es []error
 
 	if err := m.checkNotification(req); err != nil {
 		return err
@@ -72,7 +70,7 @@ func (m *MeizuService) Send(ctx context.Context, request interface{}, opt SendOp
 		return err
 	}
 
-	if opt.DryRun {
+	if so.DryRun {
 		return nil
 	}
 
@@ -193,32 +191,27 @@ func (m *MeizuService) buildNotification(req *notify.MeizuPushNotification) (str
 	return string(message), nil
 }
 
-func (m *MeizuService) MulticastSend(ctx context.Context, req interface{}) error {
+func (m *MeizuService) SendMulticast(ctx context.Context, req interface{}, opt ...MulticastOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (m *MeizuService) Subscribe(ctx context.Context, req interface{}) error {
+func (m *MeizuService) Subscribe(ctx context.Context, req interface{}, opt ...SubscribeOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (m *MeizuService) Unsubscribe(ctx context.Context, req interface{}) error {
+func (m *MeizuService) Unsubscribe(ctx context.Context, req interface{}, opt ...UnsubscribeOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (m *MeizuService) SendToTopic(ctx context.Context, req interface{}) error {
+func (m *MeizuService) SendToTopic(ctx context.Context, req interface{}, opt ...TopicOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (m *MeizuService) SendToCondition(ctx context.Context, req interface{}) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (m *MeizuService) CheckDevice(ctx context.Context, req interface{}) bool {
+func (m *MeizuService) CheckDevice(ctx context.Context, req interface{}, opt ...CheckDeviceOption) bool {
 	//TODO implement me
 	panic("implement me")
 }

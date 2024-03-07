@@ -7,9 +7,9 @@ import (
 	"github.com/cossim/hipush/internal/adapter"
 	"github.com/cossim/hipush/internal/consts"
 	"github.com/cossim/hipush/internal/factory"
-	"github.com/cossim/hipush/internal/push"
 	g "github.com/cossim/hipush/internal/server/grpc"
 	h "github.com/cossim/hipush/internal/server/http"
+	"github.com/cossim/hipush/push"
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
 	"log"
@@ -57,45 +57,45 @@ func main() {
 		return adapter.NewPushServiceAdapter(svc)
 	})
 
-	//pushServiceFactory.Register(consts.PlatformHuawei.String(), func() push.PushService {
-	//	svc, err := push.NewHMSService(cfg)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	return adapter.NewPushServiceAdapter(svc)
-	//})
-	//
-	//pushServiceFactory.Register(consts.PlatformVivo.String(), func() push.PushService {
-	//	svc, err := push.NewVivoService(cfg)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	return adapter.NewPushServiceAdapter(svc)
-	//})
-	//
-	//pushServiceFactory.Register(consts.PlatformOppo.String(), func() push.PushService {
-	//	svc, err := push.NewOppoService(cfg)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	return adapter.NewPushServiceAdapter(svc)
-	//})
-	//
-	//pushServiceFactory.Register(consts.PlatformXiaomi.String(), func() push.PushService {
-	//	svc, err := push.NewXiaomiService(cfg)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	return adapter.NewPushServiceAdapter(svc)
-	//})
-	//
-	//pushServiceFactory.Register(consts.PlatformMeizu.String(), func() push.PushService {
-	//	svc, err := push.NewMeizuService(cfg)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	return adapter.NewPushServiceAdapter(svc)
-	//})
+	pushServiceFactory.Register(consts.PlatformHuawei.String(), func() push.PushService {
+		svc, err := push.NewHMSService(cfg)
+		if err != nil {
+			panic(err)
+		}
+		return adapter.NewPushServiceAdapter(svc)
+	})
+
+	pushServiceFactory.Register(consts.PlatformVivo.String(), func() push.PushService {
+		svc, err := push.NewVivoService(cfg)
+		if err != nil {
+			panic(err)
+		}
+		return adapter.NewPushServiceAdapter(svc)
+	})
+
+	pushServiceFactory.Register(consts.PlatformOppo.String(), func() push.PushService {
+		svc, err := push.NewOppoService(cfg)
+		if err != nil {
+			panic(err)
+		}
+		return adapter.NewPushServiceAdapter(svc)
+	})
+
+	pushServiceFactory.Register(consts.PlatformXiaomi.String(), func() push.PushService {
+		svc, err := push.NewXiaomiService(cfg)
+		if err != nil {
+			panic(err)
+		}
+		return adapter.NewPushServiceAdapter(svc)
+	})
+
+	pushServiceFactory.Register(consts.PlatformMeizu.String(), func() push.PushService {
+		svc, err := push.NewMeizuService(cfg)
+		if err != nil {
+			panic(err)
+		}
+		return adapter.NewPushServiceAdapter(svc)
+	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

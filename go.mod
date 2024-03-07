@@ -1,6 +1,6 @@
 module github.com/cossim/hipush
 
-go 1.22
+go 1.22.0
 
 require (
 	firebase.google.com/go v3.13.0+incompatible
@@ -18,7 +18,6 @@ require (
 	github.com/sideshow/apns2 v0.23.0
 	github.com/yilee/xiaomi-push v0.0.0-20170213073944-562fbb07388e
 	go.uber.org/zap v1.27.0
-	golang.org/x/net v0.21.0
 	google.golang.org/api v0.168.0
 	google.golang.org/grpc v1.62.0
 	google.golang.org/protobuf v1.32.0
@@ -71,6 +70,7 @@ require (
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/crypto v0.19.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/oauth2 v0.17.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect

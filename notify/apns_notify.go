@@ -8,11 +8,12 @@ import (
 )
 
 type ApnsPushNotification struct {
-	Retry             int                    `json:"retry,omitempty"`
+	AppID string `json:"app_id,omitempty"`
+
 	Tokens            []string               `json:"tokens" binding:"required"`
 	Priority          string                 `json:"priority,omitempty"`
 	Title             string                 `json:"title,omitempty"`
-	Message           string                 `json:"message,omitempty"`
+	Content           string                 `json:"content,omitempty"`
 	Expiration        *int64                 `json:"expiration,omitempty"`
 	ApnsID            string                 `json:"apns_id,omitempty"`
 	CollapseID        string                 `json:"collapse_id,omitempty"`
@@ -41,7 +42,7 @@ func (a *ApnsPushNotification) Get() interface{} {
 }
 
 func (a *ApnsPushNotification) GetRetry() int {
-	return a.Retry
+	return 0
 }
 
 func (a *ApnsPushNotification) GetTokens() []string {
@@ -53,7 +54,7 @@ func (a *ApnsPushNotification) GetTitle() string {
 }
 
 func (a *ApnsPushNotification) GetMessage() string {
-	return a.Message
+	return a.Content
 }
 
 func (a *ApnsPushNotification) GetTopic() string {
@@ -202,8 +203,8 @@ func GetIOSNotification(req *ApnsPushNotification) *apns2.Notification {
 	payload := payload.NewPayload()
 
 	// add alert object if message length > 0 and title is empty
-	if len(req.Message) > 0 && req.Title == "" {
-		payload.Alert(req.Message)
+	if len(req.Content) > 0 && req.Title == "" {
+		payload.Alert(req.Content)
 	}
 
 	// zero value for clear the badge on the app icon.
@@ -270,8 +271,8 @@ func iosAlertDictionary(notificationPayload *payload.Payload, req *ApnsPushNotif
 		notificationPayload.InterruptionLevel(payload.EInterruptionLevel(req.InterruptionLevel))
 	}
 
-	if len(req.Message) > 0 && len(req.Title) > 0 {
-		notificationPayload.AlertBody(req.Message)
+	if len(req.Content) > 0 && len(req.Title) > 0 {
+		notificationPayload.AlertBody(req.Content)
 	}
 
 	if len(req.Alert.Title) > 0 {

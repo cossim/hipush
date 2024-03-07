@@ -9,7 +9,7 @@ import (
 	client "github.com/cossim/go-hms-push/push/core"
 	"github.com/cossim/go-hms-push/push/model"
 	"github.com/cossim/hipush/config"
-	"github.com/cossim/hipush/internal/notify"
+	"github.com/cossim/hipush/notify"
 	"log"
 )
 
@@ -23,7 +23,7 @@ const (
 	DefaultPushUrl = "https://push-api.cloud.huawei.com"
 )
 
-// HMSService 实现huawei推送
+// HMSService 实现huawei推送，实现 PushService 接口
 type HMSService struct {
 	clients map[string]*client.HMSClient
 }
@@ -59,19 +59,31 @@ func NewHMSService(cfg *config.Config) (*HMSService, error) {
 	return s, nil
 }
 
-func (h *HMSService) Send(ctx context.Context, request interface{}, opt SendOption) error {
+func (h *HMSService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {
 	req, ok := request.(*notify.HMSPushNotification)
 	if !ok {
 		return errors.New("invalid request parameter")
 	}
 
-	var maxRetry = req.Retry
+	so := &SendOptions{}
+	so.ApplyOptions(opt)
+
+	var maxRetry = so.Retry
 	if maxRetry <= 0 {
 		maxRetry = DefaultMaxRetry // 设置一个默认的最大重试次数
 	}
 
-	if err := h.validation(req); err != nil {
+	if err := h.checkNotification(req); err != nil {
 		return err
+	}
+
+	notification, err := h.buildNotification(req)
+	if err != nil {
+		return err
+	}
+
+	if so.DryRun {
+		return nil
 	}
 
 	client, ok := h.clients[req.AppID]
@@ -82,15 +94,6 @@ func (h *HMSService) Send(ctx context.Context, request interface{}, opt SendOpti
 	log.Printf("hms req %v", req)
 
 	for retryCount := 0; retryCount < maxRetry; retryCount++ {
-		notification, err := h.buildNotification(req)
-		if err != nil {
-			return err
-		}
-		marshal, err := json.Marshal(notification)
-		if err != nil {
-			return err
-		}
-		fmt.Println("marshal => ", string(marshal))
 		res, err := client.SendMessage(ctx, notification)
 		if err != nil {
 			return err
@@ -107,42 +110,19 @@ func (h *HMSService) Send(ctx context.Context, request interface{}, opt SendOpti
 	return fmt.Errorf("failed to send notification after %d attempts", maxRetry)
 }
 
-func (h *HMSService) MulticastSend(ctx context.Context, req interface{}) error {
-	//TODO implement me
-	panic("implement me")
-}
+func (h *HMSService) checkNotification(req *notify.HMSPushNotification) error {
+	if len(req.Tokens) == 0 {
+		return errors.New("tokens cannot be empty")
+	}
 
-func (h *HMSService) Subscribe(ctx context.Context, req interface{}) error {
-	//TODO implement me
-	panic("implement me")
-}
+	if req.Title == "" {
+		return errors.New("title cannot be empty")
+	}
 
-func (h *HMSService) Unsubscribe(ctx context.Context, req interface{}) error {
-	//TODO implement me
-	panic("implement me")
-}
+	if req.Content == "" {
+		return errors.New("content cannot be empty")
+	}
 
-func (h *HMSService) SendToTopic(ctx context.Context, req interface{}) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h *HMSService) SendToCondition(ctx context.Context, req interface{}) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h *HMSService) CheckDevice(ctx context.Context, req interface{}) bool {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h *HMSService) Name() string {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h *HMSService) validation(req *notify.HMSPushNotification) error {
 	if req.MessageRequest == nil {
 		return errors.New("message request is empty")
 	}
@@ -210,9 +190,9 @@ func (h *HMSService) buildNotification(req *notify.HMSPushNotification) (*model.
 		}
 	}
 
-	if len(req.Message) > 0 {
+	if len(req.Content) > 0 {
 		setDefaultAndroidNotification()
-		msgRequest.Message.Android.Notification.Body = req.Message
+		msgRequest.Message.Android.Notification.Body = req.Content
 	}
 
 	if len(req.Title) > 0 {
@@ -244,4 +224,34 @@ func (h *HMSService) buildNotification(req *notify.HMSPushNotification) (*model.
 
 	log.Printf("Default message is %s", string(m))
 	return msgRequest, nil
+}
+
+func (h *HMSService) SendMulticast(ctx context.Context, req interface{}, opt ...MulticastOption) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h *HMSService) Subscribe(ctx context.Context, req interface{}, opt ...SubscribeOption) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h *HMSService) Unsubscribe(ctx context.Context, req interface{}, opt ...UnsubscribeOption) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h *HMSService) SendToTopic(ctx context.Context, req interface{}, opt ...TopicOption) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h *HMSService) CheckDevice(ctx context.Context, req interface{}, opt ...CheckDeviceOption) bool {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (h *HMSService) Name() string {
+	//TODO implement me
+	panic("implement me")
 }

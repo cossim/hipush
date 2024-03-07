@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"github.com/cossim/hipush/internal/notify"
+	"github.com/cossim/hipush/notify"
 	"time"
 )
 

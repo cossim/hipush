@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cossim/hipush/config"
-	"github.com/cossim/hipush/internal/notify"
+	"github.com/cossim/hipush/notify"
 	xp "github.com/yilee/xiaomi-push"
 	"log"
 	"strings"
@@ -16,7 +16,7 @@ var (
 	MaxConcurrentXiaomiPushes = make(chan struct{}, 100)
 )
 
-// XiaomiPushService 小米推送 实现PushService接口
+// XiaomiPushService 小米推送 实现 PushService 接口
 type XiaomiPushService struct {
 	clients map[string]*xp.MiPush
 }
@@ -37,14 +37,17 @@ func NewXiaomiService(cfg *config.Config) (*XiaomiPushService, error) {
 	return s, nil
 }
 
-func (x *XiaomiPushService) Send(ctx context.Context, request interface{}, opt SendOption) error {
+func (x *XiaomiPushService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {
 	req, ok := request.(*notify.XiaomiPushNotification)
 	if !ok {
 		return errors.New("invalid request")
 	}
 
+	so := &SendOptions{}
+	so.ApplyOptions(opt)
+
 	var (
-		retry      = opt.Retry
+		retry      = so.Retry
 		maxRetry   = retry
 		retryCount = 0
 		es         []error
@@ -59,7 +62,7 @@ func (x *XiaomiPushService) Send(ctx context.Context, request interface{}, opt S
 		return err
 	}
 
-	if opt.DryRun {
+	if so.DryRun {
 		return nil
 	}
 
@@ -177,32 +180,27 @@ func (x *XiaomiPushService) send(ctx context.Context, appID string, tokens []str
 	return newTokens, nil
 }
 
-func (x *XiaomiPushService) MulticastSend(ctx context.Context, req interface{}) error {
+func (x *XiaomiPushService) SendMulticast(ctx context.Context, req interface{}, opt ...MulticastOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (x *XiaomiPushService) Subscribe(ctx context.Context, req interface{}) error {
+func (x *XiaomiPushService) Subscribe(ctx context.Context, req interface{}, opt ...SubscribeOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (x *XiaomiPushService) Unsubscribe(ctx context.Context, req interface{}) error {
+func (x *XiaomiPushService) Unsubscribe(ctx context.Context, req interface{}, opt ...UnsubscribeOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (x *XiaomiPushService) SendToTopic(ctx context.Context, req interface{}) error {
+func (x *XiaomiPushService) SendToTopic(ctx context.Context, req interface{}, opt ...TopicOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (x *XiaomiPushService) SendToCondition(ctx context.Context, req interface{}) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (x *XiaomiPushService) CheckDevice(ctx context.Context, req interface{}) bool {
+func (x *XiaomiPushService) CheckDevice(ctx context.Context, req interface{}, opt ...CheckDeviceOption) bool {
 	//TODO implement me
 	panic("implement me")
 }

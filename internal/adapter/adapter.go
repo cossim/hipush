@@ -2,45 +2,47 @@ package adapter
 
 import (
 	"context"
-	"github.com/cossim/hipush/internal/push"
+	"github.com/cossim/hipush/push"
 )
-
-type PushServiceAdapter struct {
-	pushService push.PushService
-}
 
 func NewPushServiceAdapter(pushService push.PushService) *PushServiceAdapter {
 	return &PushServiceAdapter{pushService: pushService}
 }
 
-func (p *PushServiceAdapter) Send(ctx context.Context, req interface{}, opt push.SendOption) error {
-	return p.pushService.Send(ctx, req, opt)
+type PushServiceAdapter struct {
+	pushService push.PushService
 }
 
-func (p *PushServiceAdapter) MulticastSend(ctx context.Context, req interface{}) error {
-	return p.pushService.MulticastSend(ctx, req)
+func (p *PushServiceAdapter) Send(ctx context.Context, req interface{}, opt ...push.SendOption) error {
+	return p.pushService.Send(ctx, req, opt...)
 }
 
-func (p *PushServiceAdapter) Subscribe(ctx context.Context, req interface{}) error {
-	return p.pushService.Subscribe(ctx, req)
+func (p *PushServiceAdapter) SendMulticast(ctx context.Context, req interface{}, opt ...push.MulticastOption) error {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (p *PushServiceAdapter) Unsubscribe(ctx context.Context, req interface{}) error {
-	return p.pushService.Unsubscribe(ctx, req)
+func (p *PushServiceAdapter) Subscribe(ctx context.Context, req interface{}, opt ...push.SubscribeOption) error {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (p *PushServiceAdapter) SendToTopic(ctx context.Context, req interface{}) error {
-	return p.pushService.SendToTopic(ctx, req)
+func (p *PushServiceAdapter) Unsubscribe(ctx context.Context, req interface{}, opt ...push.UnsubscribeOption) error {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (p *PushServiceAdapter) SendToCondition(ctx context.Context, req interface{}) error {
-	return p.pushService.SendToCondition(ctx, req)
+func (p *PushServiceAdapter) SendToTopic(ctx context.Context, req interface{}, opt ...push.TopicOption) error {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (p *PushServiceAdapter) CheckDevice(ctx context.Context, req interface{}) bool {
-	return p.pushService.CheckDevice(ctx, req)
+func (p *PushServiceAdapter) CheckDevice(ctx context.Context, req interface{}, opt ...push.CheckDeviceOption) bool {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (p *PushServiceAdapter) Name() string {
-	return p.pushService.Name()
+	//TODO implement me
+	panic("implement me")
 }

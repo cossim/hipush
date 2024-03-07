@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"github.com/cossim/hipush/api/http/v1/dto"
 	"github.com/cossim/hipush/internal/consts"
-	"github.com/cossim/hipush/internal/notify"
-	"github.com/cossim/hipush/internal/push"
+	"github.com/cossim/hipush/notify"
+	"github.com/cossim/hipush/push"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -43,7 +43,7 @@ func (h *Handler) handleXiaomiPush(c *gin.Context, req *dto.PushRequest) {
 		IsScheduled:   r.IsScheduled,
 		ScheduledTime: r.ScheduledTime,
 	}
-	if err := service.Send(c, rr, push.SendOption{
+	if err := service.Send(c, rr, &push.SendOptions{
 		DryRun: false,
 		Retry:  0,
 	}); err != nil {

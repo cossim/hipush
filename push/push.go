@@ -90,37 +90,26 @@ type PushRequest interface {
 	GetInterruptionLevel() string
 }
 
-type SendOption struct {
-	// DryRun 只进行数据校验不实际推送，数据校验成功即为成功
-	DryRun bool `json:"dry_run,omitempty"`
-	// Retry 重试次数
-	Retry int `json:"retry,omitempty"`
-}
-
+// PushService 提供推送服务的接口
 type PushService interface {
-	// 发送消息给单个设备
-	//Send(ctx context.Context, req PushRequest) error
+	// Send 发送消息给单个设备
+	Send(ctx context.Context, req interface{}, opt ...SendOption) error
 
-	Send(ctx context.Context, req interface{}, opt SendOption) error
+	// SendMulticast 发送消息给多个设备
+	SendMulticast(ctx context.Context, req interface{}, opt ...MulticastOption) error
 
-	// 发送消息给多个设备
-	MulticastSend(ctx context.Context, req interface{}) error
+	// Subscribe 订阅特定主题
+	Subscribe(ctx context.Context, req interface{}, opt ...SubscribeOption) error
 
-	// 订阅特定主题
-	Subscribe(ctx context.Context, req interface{}) error
+	// Unsubscribe 取消订阅特定主题
+	Unsubscribe(ctx context.Context, req interface{}, opt ...UnsubscribeOption) error
 
-	// 取消订阅特定主题
-	Unsubscribe(ctx context.Context, req interface{}) error
+	// SendToTopic 发送消息到特定主题
+	SendToTopic(ctx context.Context, req interface{}, opt ...TopicOption) error
 
-	// 发送消息到特定主题
-	SendToTopic(ctx context.Context, req interface{}) error
+	// CheckDevice 检查设备是否可用
+	CheckDevice(ctx context.Context, req interface{}, opt ...CheckDeviceOption) bool
 
-	// 发送消息到条件选择器
-	SendToCondition(ctx context.Context, req interface{}) error
-
-	// 检查设备是否可用
-	CheckDevice(ctx context.Context, req interface{}) bool
-
-	// 获取推送服务的名称
+	// Name 获取推送服务的名称
 	Name() string
 }

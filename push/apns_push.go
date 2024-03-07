@@ -4,11 +4,9 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/tls"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/cossim/hipush/config"
-	"github.com/cossim/hipush/internal/notify"
+	"github.com/cossim/hipush/notify"
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/token"
 	"log"
@@ -37,7 +35,7 @@ const (
 	dotP12 = ".p12"
 )
 
-// APNsService 实现APNs推送
+// APNsService 实现APNs推送，实现 PushService 接口
 type APNsService struct {
 	clients map[string]*apns2.Client
 }
@@ -133,40 +131,41 @@ var DialTLS = func(cfg *tls.Config) func(network, addr string) (net.Conn, error)
 	}
 }
 
-func (a *APNsService) Send(ctx context.Context, request interface{}, opt SendOption) error {
+func (a *APNsService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {
 	req, ok := request.(*notify.ApnsPushNotification)
 	if !ok {
 		return errors.New("invalid request")
 	}
 
-	marshal, err := json.Marshal(req)
-	if err != nil {
-		return err
-	}
-	fmt.Println("req => ", string(marshal))
+	so := &SendOptions{}
+	so.ApplyOptions(opt)
 
-	retry := req.Retry
+	var (
+		retry      = so.Retry
+		maxRetry   = so.Retry
+		retryCount = 0
+		es         error
+	)
 
-	var maxRetry = retry
-	if maxRetry <= 0 {
-		maxRetry = DefaultMaxRetry // 设置一个默认的最大重试次数
-	}
 	if retry > 0 && retry < maxRetry {
 		maxRetry = retry
 	}
 
-	// 重试计数
-	retryCount := 0
+	if err := a.checkNotification(req); err != nil {
+		return err
+	}
 
-	//notification, err := a.MapPushRequestToApnsPushNotification(req)
-	//if err != nil {
-	//	return err
-	//}
+	notification, err := a.buildNotification(req)
+	if err != nil {
+		return err
+	}
 
-	var es error
+	if so.DryRun {
+		return nil
+	}
 
 	for {
-		newTokens, err := a.sendNotifications(req)
+		newTokens, err := a.sendNotifications(req.AppID, req.Tokens, notification)
 		if err != nil {
 			log.Printf("sendNotifications error => %v", err)
 			es = err
@@ -193,11 +192,10 @@ func (a *APNsService) MapPushRequestToApnsPushNotification(req PushRequest) (*no
 	}
 
 	apnsNotification := &notify.ApnsPushNotification{
-		Retry:             req.GetRetry(),
 		Tokens:            req.GetTokens(),
 		Priority:          req.GetPriority(),
 		Title:             req.GetTitle(),
-		Message:           req.GetMessage(),
+		Content:           req.GetMessage(),
 		Expiration:        req.GetExpiration(),
 		ApnsID:            req.GetApnsID(),
 		CollapseID:        req.GetCollapseID(),
@@ -273,22 +271,25 @@ func (a *APNsService) MapToAlert(data interface{}) (notify.Alert, error) {
 	return alert, nil
 }
 
-func (a *APNsService) sendNotifications(req *notify.ApnsPushNotification) ([]string, error) {
+func (a *APNsService) buildNotification(req *notify.ApnsPushNotification) (*apns2.Notification, error) {
+	return notify.GetIOSNotification(req), nil
+}
+
+func (a *APNsService) sendNotifications(appid string, tokens []string, notification *apns2.Notification) ([]string, error) {
 	var newTokens []string
-	notification := notify.GetIOSNotification(req)
 	var wg sync.WaitGroup
 
-	if _, ok := a.clients[req.ApnsID]; !ok {
+	if _, ok := a.clients[appid]; !ok {
 		return nil, errors.New("invalid appid or appid push is not enabled")
 	}
 
 	var es []error
 
-	for _, token := range req.Tokens {
+	for _, token := range tokens {
 		// occupy push slot
 		MaxConcurrentIOSPushes <- struct{}{}
 		wg.Add(1)
-		go func(notification apns2.Notification, token string) {
+		go func(notification *apns2.Notification, token string) {
 			defer func() {
 				// free push slot
 				<-MaxConcurrentIOSPushes
@@ -296,7 +297,7 @@ func (a *APNsService) sendNotifications(req *notify.ApnsPushNotification) ([]str
 			}()
 
 			notification.DeviceToken = token
-			res, err := a.clients[req.ApnsID].Push(&notification)
+			res, err := a.clients[appid].Push(notification)
 			if err != nil || (res != nil && res.StatusCode != http.StatusOK) {
 				if err == nil {
 					err = errors.New(res.Reason)
@@ -311,7 +312,7 @@ func (a *APNsService) sendNotifications(req *notify.ApnsPushNotification) ([]str
 			} else {
 				log.Printf("apns send success: %s", res.Reason)
 			}
-		}(*notification, token)
+		}(notification, token)
 	}
 	wg.Wait()
 	if len(es) > 0 {
@@ -325,32 +326,43 @@ func (a *APNsService) sendNotifications(req *notify.ApnsPushNotification) ([]str
 	return newTokens, nil
 }
 
-func (a *APNsService) MulticastSend(ctx context.Context, req interface{}) error {
+func (a *APNsService) checkNotification(req *notify.ApnsPushNotification) error {
+	if len(req.Tokens) == 0 {
+		return errors.New("tokens cannot be empty")
+	}
+
+	if req.Title == "" {
+		return errors.New("title cannot be empty")
+	}
+
+	if req.Content == "" {
+		return errors.New("content cannot be empty")
+	}
+
+	return nil
+}
+
+func (a *APNsService) SendMulticast(ctx context.Context, req interface{}, opt ...MulticastOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (a *APNsService) Subscribe(ctx context.Context, req interface{}) error {
+func (a *APNsService) Subscribe(ctx context.Context, req interface{}, opt ...SubscribeOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (a *APNsService) Unsubscribe(ctx context.Context, req interface{}) error {
+func (a *APNsService) Unsubscribe(ctx context.Context, req interface{}, opt ...UnsubscribeOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (a *APNsService) SendToTopic(ctx context.Context, req interface{}) error {
+func (a *APNsService) SendToTopic(ctx context.Context, req interface{}, opt ...TopicOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (a *APNsService) SendToCondition(ctx context.Context, req interface{}) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (a *APNsService) CheckDevice(ctx context.Context, req interface{}) bool {
+func (a *APNsService) CheckDevice(ctx context.Context, req interface{}, opt ...CheckDeviceOption) bool {
 	//TODO implement me
 	panic("implement me")
 }

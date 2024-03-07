@@ -6,7 +6,7 @@ import (
 	"fmt"
 	op "github.com/316014408/oppo-push"
 	"github.com/cossim/hipush/config"
-	"github.com/cossim/hipush/internal/notify"
+	"github.com/cossim/hipush/notify"
 	"log"
 	"strings"
 	"sync"
@@ -16,7 +16,7 @@ var (
 	MaxConcurrentOppoPushes = make(chan struct{}, 100)
 )
 
-// OppoService 实现vivo推送，必须实现PushService接口
+// OppoService 实现oppo推送，实现 PushService 接口
 type OppoService struct {
 	clients map[string]*op.OppoPush
 }
@@ -37,27 +37,25 @@ func NewOppoService(cfg *config.Config) (*OppoService, error) {
 	return s, nil
 }
 
-func (o *OppoService) Send(ctx context.Context, request interface{}, opt SendOption) error {
+func (o *OppoService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {
 	req, ok := request.(*notify.OppoPushNotification)
 	if !ok {
 		return errors.New("invalid request")
 	}
 
+	so := &SendOptions{}
+	so.ApplyOptions(opt)
+
 	var (
-		retry      = opt.Retry
+		retry      = so.Retry
 		maxRetry   = retry
 		retryCount = 0
+		es         []error
 	)
 
-	// 重试计数
-	if maxRetry <= 0 {
-		maxRetry = DefaultMaxRetry // 设置一个默认的最大重试次数
-	}
 	if retry > 0 && retry < maxRetry {
 		maxRetry = retry
 	}
-
-	var es []error
 
 	if err := o.checkNotification(req); err != nil {
 		return err
@@ -68,7 +66,7 @@ func (o *OppoService) Send(ctx context.Context, request interface{}, opt SendOpt
 		return err
 	}
 
-	if opt.DryRun {
+	if so.DryRun {
 		return nil
 	}
 
@@ -184,32 +182,27 @@ func (o *OppoService) buildNotification(req *notify.OppoPushNotification) (*op.M
 	return m, nil
 }
 
-func (o *OppoService) MulticastSend(ctx context.Context, req interface{}) error {
+func (o *OppoService) SendMulticast(ctx context.Context, req interface{}, opt ...MulticastOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (o *OppoService) Subscribe(ctx context.Context, req interface{}) error {
+func (o *OppoService) Subscribe(ctx context.Context, req interface{}, opt ...SubscribeOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (o *OppoService) Unsubscribe(ctx context.Context, req interface{}) error {
+func (o *OppoService) Unsubscribe(ctx context.Context, req interface{}, opt ...UnsubscribeOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (o *OppoService) SendToTopic(ctx context.Context, req interface{}) error {
+func (o *OppoService) SendToTopic(ctx context.Context, req interface{}, opt ...TopicOption) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (o *OppoService) SendToCondition(ctx context.Context, req interface{}) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (o *OppoService) CheckDevice(ctx context.Context, req interface{}) bool {
+func (o *OppoService) CheckDevice(ctx context.Context, req interface{}, opt ...CheckDeviceOption) bool {
 	//TODO implement me
 	panic("implement me")
 }
