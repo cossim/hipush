@@ -99,6 +99,14 @@ func main() {
 		return adapter.NewPushServiceAdapter(svc)
 	})
 
+	pushServiceFactory.Register(consts.PlatformHonor.String(), func() push.PushService {
+		svc, err := push.NewHonorService(cfg)
+		if err != nil {
+			panic(err)
+		}
+		return adapter.NewPushServiceAdapter(svc)
+	})
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

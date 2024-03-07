@@ -154,6 +154,18 @@ func (s *StateStorage) AddMeizuFailed(count int64) {
 	s.store.Add(consts.MeizuFailed, count)
 }
 
+func (s *StateStorage) AddHonorTotal(count int64) {
+	s.store.Add(consts.HonorTotal, count)
+}
+
+func (s *StateStorage) AddHonorSuccess(count int64) {
+	s.store.Add(consts.HonorSuccess, count)
+}
+
+func (s *StateStorage) AddHonorFailed(count int64) {
+	s.store.Add(consts.HonorFailed, count)
+}
+
 // GetTotalCount show counts of all notification.
 func (s *StateStorage) GetTotalCount() int64 {
 	return s.store.Get(consts.HiPushTotal)

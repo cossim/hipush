@@ -27,6 +27,9 @@ const (
 
 	// PlatformMeizu 表示魅族平台
 	PlatformMeizu Platform = "meizu"
+
+	// PlatformHonor 表示荣耀平台
+	PlatformHonor Platform = "honor"
 )
 
 // String converts the enum value to its string representation.
@@ -54,7 +57,7 @@ func (p Platform) String() string {
 // IsValid 判断平台是否有效
 func (p Platform) IsValid() bool {
 	switch p {
-	case PlatformIOS, PlatformHuawei, PlatformAndroid, PlatformXiaomi, PlatformVivo, PlatformOppo:
+	case PlatformIOS, PlatformHuawei, PlatformAndroid, PlatformXiaomi, PlatformVivo, PlatformOppo, PlatformMeizu, PlatformHonor:
 		return true
 	default:
 		return false

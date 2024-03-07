@@ -101,3 +101,10 @@ meizu:
     package: ""
     app_key: ""
     max_retry: 5
+
+honor:
+  - enabled: true
+    app_id: "2882303761520159644"
+    client_id: ""
+    client_secret: ""
+    max_retry: 5

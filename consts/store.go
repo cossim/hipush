@@ -32,6 +32,8 @@ const (
 	XiaomiPrefix = key + "-xiaomi"
 	// 魅族平台
 	MeizuPrefix = key + "-meizu"
+	// 荣耀平台
+	HonorPrefix = key + "-honor"
 )
 
 var (
@@ -81,4 +83,9 @@ var (
 	MeizuTotal   = MeizuPrefix + TotalSuffix
 	MeizuSuccess = MeizuPrefix + SuccessSuffix
 	MeizuFailed  = MeizuPrefix + FailedSuffix
+
+	// 荣耀平台键名称
+	HonorTotal   = HonorPrefix + TotalSuffix
+	HonorSuccess = HonorPrefix + SuccessSuffix
+	HonorFailed  = HonorPrefix + FailedSuffix
 )

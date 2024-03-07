@@ -67,6 +67,14 @@ type MeizuAppConfig struct {
 	MaxRetry int    `yaml:"max_retry"`
 }
 
+type HonorAppConfig struct {
+	Enabled      bool   `yaml:"enabled"`
+	AppID        string `yaml:"app_id"`
+	ClientID     string `yaml:"client_id"`
+	ClientSecret string `yaml:"client_secret"`
+	MaxRetry     int    `yaml:"max_retry"`
+}
+
 type Config struct {
 	HTTP    HTTPConfig         `yaml:"http"`
 	GRPC    GRPCConfig         `yaml:"grpc"`
@@ -77,6 +85,7 @@ type Config struct {
 	Oppo    []OppoAppConfig    `yaml:"oppo"`
 	Xiaomi  []XiaomiAppConfig  `yaml:"xiaomi"`
 	Meizu   []MeizuAppConfig   `yaml:"meizu"`
+	Honor   []HonorAppConfig   `yaml:"honor"`
 }
 
 type HTTPConfig struct {

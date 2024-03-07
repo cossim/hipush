@@ -150,10 +150,10 @@ func (h *HMSService) send(ctx context.Context, appid string, tokens []string, no
 			if err != nil {
 				log.Printf("hcm send error: %s", err)
 				h.status.AddHuaweiFailed(1)
-				h.status.AddHuaweiSuccess(1)
 			} else {
 				log.Printf("hcm send success: %s", res)
 				newTokens = append(newTokens, token)
+				h.status.AddHuaweiSuccess(1)
 			}
 		}(notification, token)
 	}
