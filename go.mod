@@ -1,6 +1,6 @@
 module github.com/cossim/hipush
 
-go 1.22.0
+go 1.20
 
 require (
 	firebase.google.com/go v3.13.0+incompatible
@@ -12,15 +12,15 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-logr/logr v1.4.1
 	github.com/go-logr/zapr v1.3.0
-	github.com/golang/protobuf v1.5.3
+	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/sideshow/apns2 v0.23.0
 	github.com/yilee/xiaomi-push v0.0.0-20170213073944-562fbb07388e
 	go.uber.org/zap v1.27.0
 	google.golang.org/api v0.168.0
-	google.golang.org/grpc v1.62.0
-	google.golang.org/protobuf v1.32.0
+	google.golang.org/grpc v1.62.1
+	google.golang.org/protobuf v1.33.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -33,9 +33,8 @@ require (
 	cloud.google.com/go/longrunning v0.5.5 // indirect
 	cloud.google.com/go/storage v1.39.0 // indirect
 	github.com/bitly/go-simplejson v0.5.1 // indirect
-	github.com/bytedance/sonic v1.10.0-rc // indirect
-	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
-	github.com/chenzhuoyu/iasm v0.9.0 // indirect
+	github.com/bytedance/sonic v1.9.1 // indirect
+	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/ddliu/go-httpclient v0.7.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
