@@ -8,11 +8,11 @@ dep: ## Get the dependencies
 
 .PHONY: lint
 lint: ## Lint Golang files
-	@golint -set_exit_status ${PKG_LIST}
+	@golint -set_exit_status ./...
 
 .PHONY: vet
 vet: ## Run go vet
-	@go vet ${PKG_LIST}
+	@go vet ./...
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
@@ -20,7 +20,7 @@ fmt: ## Run go fmt against code.
 
 .PHONY: test
 test: fmt vet ## Run unittests
-	@go test -short ${PKG_LIST}
+	@go test -short ./...
 
 install: ## Install dependencies and protoc
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
