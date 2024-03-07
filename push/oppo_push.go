@@ -7,6 +7,7 @@ import (
 	op "github.com/316014408/oppo-push"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/notify"
+	"github.com/cossim/hipush/status"
 	"log"
 	"strings"
 	"sync"
@@ -19,6 +20,7 @@ var (
 // OppoService 实现oppo推送，实现 PushService 接口
 type OppoService struct {
 	clients map[string]*op.OppoPush
+	status  *status.StateStorage
 }
 
 func NewOppoService(cfg *config.Config) (*OppoService, error) {
@@ -73,7 +75,7 @@ func (o *OppoService) Send(ctx context.Context, request interface{}, opt ...Send
 	for {
 		newTokens, err := o.send(req.AppID, req.Tokens, notification)
 		if err != nil {
-			log.Printf("sendNotifications error => %v", err)
+			log.Printf("send error => %v", err)
 			es = append(es, err)
 		}
 		// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
@@ -110,6 +112,7 @@ func (o *OppoService) send(appID string, tokens []string, message *op.Message) (
 		// occupy push slot
 		MaxConcurrentOppoPushes <- struct{}{}
 		wg.Add(1)
+		o.status.AddOppoTotal(1)
 		go func(notification *op.Message, token string) {
 			defer func() {
 				// free push slot
@@ -131,8 +134,10 @@ func (o *OppoService) send(appID string, tokens []string, message *op.Message) (
 					newTokens = append(newTokens, token)
 				}
 				log.Printf("oppo send error: %s", err)
+				o.status.AddOppoFailed(1)
 			} else {
 				log.Printf("oppo send success: %s", res.Message)
+				o.status.AddOppoSuccess(1)
 			}
 		}(message, token)
 	}

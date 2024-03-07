@@ -6,15 +6,22 @@ import (
 	"fmt"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/notify"
+	"github.com/cossim/hipush/status"
 	vp "github.com/cossim/vivo-push"
 	"log"
 	"strings"
 	"sync"
 )
 
+var (
+	// MaxConcurrentVivoPushes pool to limit the number of concurrent iOS pushes
+	MaxConcurrentVivoPushes chan struct{}
+)
+
 // VivoService 实现vivo推送，实现 PushService 接口
 type VivoService struct {
 	clients map[string]*vp.VivoPush
+	status  *status.StateStorage
 }
 
 func NewVivoService(cfg *config.Config) (*VivoService, error) {
@@ -59,7 +66,7 @@ func (v *VivoService) Send(ctx context.Context, request interface{}, opt ...Send
 	for {
 		newTokens, err := v.send(req)
 		if err != nil {
-			log.Printf("sendNotifications error => %v", err)
+			log.Printf("send error => %v", err)
 			es = append(es, err)
 		}
 		// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
@@ -98,15 +105,15 @@ func (v *VivoService) send(req *notify.VivoPushNotification) ([]string, error) {
 
 	for _, token := range req.Tokens {
 		// occupy push slot
-		MaxConcurrentIOSPushes <- struct{}{}
+		MaxConcurrentVivoPushes <- struct{}{}
 		wg.Add(1)
+		v.status.AddVivoTotal(1)
 		go func(notification *vp.Message, token string) {
 			defer func() {
 				// free push slot
-				<-MaxConcurrentIOSPushes
+				<-MaxConcurrentVivoPushes
 				wg.Done()
 			}()
-
 			notification.RegId = token
 			res, err := client.Send(notification, token)
 			if err != nil || (res != nil && res.Result != 0) {
@@ -120,8 +127,10 @@ func (v *VivoService) send(req *notify.VivoPushNotification) ([]string, error) {
 					newTokens = append(newTokens, token)
 				}
 				log.Printf("vivo send error: %s", err)
+				v.status.AddVivoFailed(1)
 			} else {
 				log.Printf("vivo send success: %s", res.Desc)
+				v.status.AddVivoSuccess(1)
 			}
 		}(notification, token)
 	}

@@ -8,6 +8,7 @@ import (
 	mzp "github.com/cossim/go-meizu-push-sdk"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/notify"
+	"github.com/cossim/hipush/status"
 	"log"
 	"strings"
 	"sync"
@@ -20,6 +21,7 @@ var (
 // MeizuService 实现魅族推送，实现 PushService 接口
 type MeizuService struct {
 	clients map[string]func(token, message string) mzp.PushResponse
+	status  *status.StateStorage
 }
 
 func NewMeizuService(cfg *config.Config) (*MeizuService, error) {
@@ -77,7 +79,7 @@ func (m *MeizuService) Send(ctx context.Context, request interface{}, opt ...Sen
 	for {
 		newTokens, err := m.send(req.AppID, req.Tokens, notification)
 		if err != nil {
-			log.Printf("sendNotifications error => %v", err)
+			log.Printf("send error => %v", err)
 			es = append(es, err)
 		}
 		// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
@@ -113,6 +115,7 @@ func (m *MeizuService) send(appid string, tokens []string, message string) ([]st
 		// occupy push slot
 		MaxConcurrentXiaomiPushes <- struct{}{}
 		wg.Add(1)
+		m.status.AddMeizuTotal(1)
 		go func(notification string, token string) {
 			defer func() {
 				// free push slot
@@ -127,8 +130,10 @@ func (m *MeizuService) send(appid string, tokens []string, message string) ([]st
 				log.Printf("oppo send error: %s", res.GetMessage())
 				// 记录失败的 Token
 				newTokens = append(newTokens, token)
+				m.status.AddMeizuFailed(1)
 			} else {
 				log.Printf("oppo send success: %s", res.GetMessage())
+				m.status.AddMeizuSuccess(1)
 			}
 		}(message, token)
 	}

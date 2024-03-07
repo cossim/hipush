@@ -5,16 +5,25 @@ import (
 	"errors"
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/messaging"
+	"fmt"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/notify"
+	"github.com/cossim/hipush/status"
 	"google.golang.org/api/option"
 	"log"
 	"strings"
+	"sync"
+)
+
+var (
+	// MaxConcurrentAndroidPushes pool to limit the number of concurrent iOS pushes
+	MaxConcurrentAndroidPushes = make(chan struct{}, 100)
 )
 
 // FCMService 谷歌安卓推送，实现了 PushService 接口
 type FCMService struct {
 	clients map[string]*messaging.Client
+	status  *status.StateStorage
 }
 
 //func NewFCMService(cfg *config.Config) (*FCMService, error) {
@@ -73,6 +82,7 @@ func (f *FCMService) Send(ctx context.Context, request interface{}, opt ...SendO
 	// 设置一个默认的最大重试次数
 	var maxRetry = req.Retry
 	var retryCount int
+	var es []error
 	if maxRetry <= 0 {
 		maxRetry = DefaultMaxRetry
 	}
@@ -90,59 +100,75 @@ func (f *FCMService) Send(ctx context.Context, request interface{}, opt ...SendO
 		return nil
 	}
 
-	client, ok := f.clients[req.AppID]
-	if !ok {
-		return errors.New("invalid appid or appid push is not enabled")
-	}
-
-Retry:
-	res, err := client.Send(ctx, notification)
-	if err != nil {
-		log.Printf("FCM server send message error: %s", err)
-		return err
-	}
-
-	if !f.IsTopic(req) {
-		log.Printf("FCM Success resp %v", res)
-		//log.Printf(fmt.Sprintf("Android Success count: %d, Failure count: %d", res.Success, res.Failure))
-	}
-
-	// TODO 记录发送成功和失败的数据
-
-	var newTokens []string
-	// result from Send messages to specific devices
-	//for k, result := range res.Results {
-	//	to := req.Topic // 默认使用 Topic
-	//	if k < len(req.Tokens) {
-	//		to = req.Tokens[k]
-	//	}
-	//
-	//	if result.Error != nil && !result.Unregistered() {
-	//		newTokens = append(newTokens, to)
-	//	}
-	//}
-
-	// result from Send messages to topics
-	if f.IsTopic(req) {
-		to := req.Topic
-		if to == "" {
-			to = req.Condition
+	for {
+		newTokens, err := f.send(ctx, req.AppID, req.Tokens, notification)
+		if err != nil {
+			log.Printf("send error => %v", err)
+			es = append(es, err)
 		}
-		log.Printf("Topic Content: %s", to)
+		// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
+		if len(newTokens) > 0 && retryCount < maxRetry {
+			retryCount++
+			req.Tokens = newTokens
+		} else {
+			break
+		}
 	}
 
-	// Device Group HTTP Response
-	//if len(res.FailedRegistrationIDs) > 0 {
-	//	newTokens = append(newTokens, res.FailedRegistrationIDs...)
-	//}
-
-	if len(newTokens) > 0 && retryCount < maxRetry {
-		retryCount++
-		req.Tokens = newTokens
-		goto Retry
+	var errorMsgs []string
+	for _, err := range es {
+		errorMsgs = append(errorMsgs, err.Error())
 	}
-
+	if len(errorMsgs) > 0 {
+		return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
+	}
 	return nil
+}
+
+func (f *FCMService) send(ctx context.Context, appid string, tokens []string, notification *messaging.Message) ([]string, error) {
+	var newTokens []string
+	var wg sync.WaitGroup
+
+	client, ok := f.clients[appid]
+	if !ok {
+		return nil, errors.New("invalid appid or appid push is not enabled")
+	}
+
+	var es []error
+
+	for _, token := range tokens {
+		// occupy push slot
+		MaxConcurrentAndroidPushes <- struct{}{}
+		wg.Add(1)
+		f.status.AddAndroidTotal(1)
+		go func(notification *messaging.Message, token string) {
+			defer func() {
+				// free push slot
+				<-MaxConcurrentAndroidPushes
+				wg.Done()
+			}()
+
+			res, err := client.Send(ctx, notification)
+			if err != nil {
+				log.Printf("fcm send error: %s", err)
+				newTokens = append(newTokens, token)
+				f.status.AddAndroidFailed(1)
+			} else {
+				log.Printf("fcm send success: %s", res)
+				f.status.AddAndroidSuccess(1)
+			}
+		}(notification, token)
+	}
+	wg.Wait()
+	if len(es) > 0 {
+		var errorStrings []string
+		for _, err := range es {
+			errorStrings = append(errorStrings, err.Error())
+		}
+		allErrorsString := strings.Join(errorStrings, ", ")
+		return nil, errors.New(allErrorsString)
+	}
+	return newTokens, nil
 }
 
 // checkNotification for check request message

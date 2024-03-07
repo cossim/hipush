@@ -55,8 +55,8 @@ type AndroidAppConfig struct {
 type XiaomiAppConfig struct {
 	Enabled   bool     `yaml:"enabled"`
 	AppID     string   `yaml:"app_id"`
-	Package   []string `json:"package"`
 	AppSecret string   `yaml:"app_secret"`
+	Package   []string `yaml:"package"`
 	MaxRetry  int      `yaml:"max_retry"`
 }
 
@@ -80,10 +80,9 @@ type Config struct {
 }
 
 type HTTPConfig struct {
-	Enabled bool `yaml:"enabled"`
-
-	Address string `mapstructure:"address" yaml:"address"`
-	Port    int    `mapstructure:"port" yaml:"port"`
+	Enabled bool   `yaml:"enabled"`
+	Address string ` yaml:"address"`
+	Port    int    ` yaml:"port"`
 }
 
 func (c HTTPConfig) Addr() string {
@@ -92,8 +91,8 @@ func (c HTTPConfig) Addr() string {
 
 type GRPCConfig struct {
 	Enabled bool   `yaml:"enabled"`
-	Address string `mapstructure:"address" yaml:"address"`
-	Port    int    `mapstructure:"port" yaml:"port"`
+	Address string ` yaml:"address"`
+	Port    int    ` yaml:"port"`
 }
 
 func (c GRPCConfig) Addr() string {

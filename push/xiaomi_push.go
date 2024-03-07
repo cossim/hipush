@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/notify"
+	"github.com/cossim/hipush/status"
 	xp "github.com/yilee/xiaomi-push"
 	"log"
 	"strings"
@@ -19,6 +20,7 @@ var (
 // XiaomiPushService 小米推送 实现 PushService 接口
 type XiaomiPushService struct {
 	clients map[string]*xp.MiPush
+	status  *status.StateStorage
 }
 
 func NewXiaomiService(cfg *config.Config) (*XiaomiPushService, error) {
@@ -69,7 +71,7 @@ func (x *XiaomiPushService) Send(ctx context.Context, request interface{}, opt .
 	for {
 		newTokens, err := x.send(ctx, req.AppID, req.Tokens, notification)
 		if err != nil {
-			log.Printf("sendNotifications error => %v", err)
+			log.Printf("send error => %v", err)
 			es = append(es, err)
 		}
 		// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
@@ -141,12 +143,13 @@ func (x *XiaomiPushService) send(ctx context.Context, appID string, tokens []str
 
 	for _, token := range tokens {
 		// occupy push slot
-		MaxConcurrentXiaomiPushes <- struct{}{}
+		MaxConcurrentMeizuPushes <- struct{}{}
 		wg.Add(1)
+		x.status.AddXiaomiTotal(1)
 		go func(notification *xp.Message, token string) {
 			defer func() {
 				// free push slot
-				<-MaxConcurrentXiaomiPushes
+				<-MaxConcurrentMeizuPushes
 				wg.Done()
 			}()
 
@@ -163,8 +166,10 @@ func (x *XiaomiPushService) send(ctx context.Context, appID string, tokens []str
 					newTokens = append(newTokens, token)
 				}
 				log.Printf("oppo send error: %s", err)
+				x.status.AddXiaomiFailed(1)
 			} else {
 				log.Printf("oppo send success: %s", res.Reason)
+				x.status.AddXiaomiSuccess(1)
 			}
 		}(message, token)
 	}

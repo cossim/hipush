@@ -5,8 +5,10 @@ import (
 	"crypto/ecdsa"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/notify"
+	"github.com/cossim/hipush/status"
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/token"
 	"log"
@@ -38,6 +40,7 @@ const (
 // APNsService 实现APNs推送，实现 PushService 接口
 type APNsService struct {
 	clients map[string]*apns2.Client
+	status  *status.StateStorage
 }
 
 func NewAPNsService(cfg *config.Config) (*APNsService, error) {
@@ -144,7 +147,7 @@ func (a *APNsService) Send(ctx context.Context, request interface{}, opt ...Send
 		retry      = so.Retry
 		maxRetry   = so.Retry
 		retryCount = 0
-		es         error
+		es         []error
 	)
 
 	if retry > 0 && retry < maxRetry {
@@ -165,10 +168,10 @@ func (a *APNsService) Send(ctx context.Context, request interface{}, opt ...Send
 	}
 
 	for {
-		newTokens, err := a.sendNotifications(req.AppID, req.Tokens, notification)
+		newTokens, err := a.send(req.AppID, req.Tokens, notification)
 		if err != nil {
-			log.Printf("sendNotifications error => %v", err)
-			es = err
+			log.Printf("send error => %v", err)
+			es = append(es, err)
 		}
 		// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
 		if len(newTokens) > 0 && retryCount < maxRetry {
@@ -179,7 +182,14 @@ func (a *APNsService) Send(ctx context.Context, request interface{}, opt ...Send
 		}
 	}
 
-	return es
+	var errorMsgs []string
+	for _, err := range es {
+		errorMsgs = append(errorMsgs, err.Error())
+	}
+	if len(errorMsgs) > 0 {
+		return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
+	}
+	return nil
 }
 
 func (a *APNsService) MapPushRequestToApnsPushNotification(req PushRequest) (*notify.ApnsPushNotification, error) {
@@ -275,7 +285,7 @@ func (a *APNsService) buildNotification(req *notify.ApnsPushNotification) (*apns
 	return notify.GetIOSNotification(req), nil
 }
 
-func (a *APNsService) sendNotifications(appid string, tokens []string, notification *apns2.Notification) ([]string, error) {
+func (a *APNsService) send(appid string, tokens []string, notification *apns2.Notification) ([]string, error) {
 	var newTokens []string
 	var wg sync.WaitGroup
 
@@ -289,6 +299,7 @@ func (a *APNsService) sendNotifications(appid string, tokens []string, notificat
 		// occupy push slot
 		MaxConcurrentIOSPushes <- struct{}{}
 		wg.Add(1)
+		a.status.AddIosTotal(1)
 		go func(notification *apns2.Notification, token string) {
 			defer func() {
 				// free push slot
@@ -309,8 +320,10 @@ func (a *APNsService) sendNotifications(appid string, tokens []string, notificat
 					newTokens = append(newTokens, token)
 				}
 				log.Printf("apns send error: %s", err)
+				a.status.AddIosFailed(1)
 			} else {
 				log.Printf("apns send success: %s", res.Reason)
+				a.status.AddIosSuccess(1)
 			}
 		}(notification, token)
 	}
