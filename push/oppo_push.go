@@ -8,6 +8,7 @@ import (
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/status"
+	"github.com/go-logr/logr"
 	"log"
 	"strings"
 	"sync"
@@ -21,11 +22,14 @@ var (
 type OppoService struct {
 	clients map[string]*op.OppoPush
 	status  *status.StateStorage
+	logger  logr.Logger
 }
 
-func NewOppoService(cfg *config.Config) (*OppoService, error) {
+func NewOppoService(cfg *config.Config, logger logr.Logger) (*OppoService, error) {
 	s := &OppoService{
 		clients: map[string]*op.OppoPush{},
+		status:  status.StatStorage,
+		logger:  logger,
 	}
 
 	for _, v := range cfg.Oppo {

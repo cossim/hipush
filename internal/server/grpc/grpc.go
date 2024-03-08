@@ -11,6 +11,7 @@ import (
 	"github.com/cossim/hipush/internal/factory"
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/push"
+	"github.com/cossim/hipush/status"
 	"github.com/go-logr/logr"
 	"github.com/golang/protobuf/jsonpb"
 	"google.golang.org/grpc"
@@ -69,14 +70,18 @@ func (h *Handler) Push(ctx context.Context, req *v1.PushRequest) (*v1.PushRespon
 	resp := &v1.PushResponse{}
 	h.logger.Info("Received push request", "platform", req.Platform, "tokens", req.Tokens, "req", req)
 
+	status.StatStorage.AddGrpcTotal(1)
+
 	service, err := h.factory.GetPushService(req.Platform)
 	if err != nil {
+		status.StatStorage.AddGrpcFailed(1)
 		h.logger.Error(err, "failed to create push service")
 		return resp, err
 	}
 
 	r, err := h.getPushRequest(req)
 	if err != nil {
+		status.StatStorage.AddGrpcFailed(1)
 		h.logger.Error(err, "failed to get push request")
 		return nil, err
 	}
@@ -85,9 +90,12 @@ func (h *Handler) Push(ctx context.Context, req *v1.PushRequest) (*v1.PushRespon
 		DryRun: req.Option.DryRun,
 		Retry:  int(req.Option.Retry),
 	}); err != nil {
+		status.StatStorage.AddGrpcFailed(1)
 		h.logger.Error(err, "failed to send push")
 		return resp, err
 	}
+
+	status.StatStorage.AddGrpcSuccess(1)
 
 	h.logger.Info("Push request processed success")
 	return resp, nil

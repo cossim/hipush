@@ -11,6 +11,7 @@ import (
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/status"
+	"github.com/go-logr/logr"
 	"log"
 	"strings"
 	"sync"
@@ -35,11 +36,14 @@ var (
 type HMSService struct {
 	clients map[string]*client.HMSClient
 	status  *status.StateStorage
+	logger  logr.Logger
 }
 
-func NewHMSService(cfg *config.Config) (*HMSService, error) {
+func NewHMSService(cfg *config.Config, logger logr.Logger) (*HMSService, error) {
 	s := &HMSService{
 		clients: make(map[string]*client.HMSClient),
+		status:  status.StatStorage,
+		logger:  logger,
 	}
 
 	var (
@@ -65,6 +69,7 @@ func NewHMSService(cfg *config.Config) (*HMSService, error) {
 		}
 		s.clients[v.AppID] = client
 	}
+
 	return s, nil
 }
 

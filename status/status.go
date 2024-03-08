@@ -3,9 +3,7 @@ package status
 import (
 	"errors"
 	"github.com/cossim/hipush/config"
-	store2 "github.com/cossim/hipush/store"
-	"log"
-
+	"github.com/cossim/hipush/store"
 	"github.com/thoas/stats"
 )
 
@@ -13,7 +11,22 @@ import (
 var Stats *stats.Stats
 
 // StatStorage implements the storage interface
-//var StatStorage *StateStorage
+var StatStorage *StateStorage
+
+func InitAppStatus(cfg *config.Config) error {
+	var s store.Store
+
+	switch cfg.Storage.Type {
+	case "memory":
+		s = store.NewMemoryStore()
+	default:
+		//logx.LogError.Error("storage error: can't find storage driver")
+		return errors.New("can't find storage driver")
+	}
+
+	StatStorage = NewStateStorage(s)
+	return nil
+}
 
 // App is status structure
 type App struct {
@@ -46,36 +59,36 @@ type HuaweiStatus struct {
 	PushError   int64 `json:"push_error"`
 }
 
-// InitAppStatus for initialize app status
-func InitAppStatus(conf *config.Config) (*StateStorage, error) {
-	//logx.LogAccess.Info("Init App Status Engine as ", conf.Stat.Engine)
-
-	var store store2.Store
-	//nolint:goconst
-	switch "" {
-	case "memory":
-		store = store2.NewMemoryStore()
-	//case "redis":
-	//	store = redis.New(conf)
-	//case "boltdb":
-	//	store = boltdb.New(conf)
-	//case "buntdb":
-	//	store = buntdb.New(conf)
-	//case "leveldb":
-	//	store = leveldb.New(conf)
-	//case "badger":
-	//	store = badger.New(conf)
-	default:
-		log.Printf("storage error: can't find storage driver")
-		return nil, errors.New("can't find storage driver")
-	}
-
-	StatStorage := NewStateStorage(store)
-
-	if err := StatStorage.Init(); err != nil {
-		log.Printf("storage error: " + err.Error())
-		return nil, err
-	}
-
-	return StatStorage, nil
-}
+//// InitAppStatus for initialize app status
+//func InitAppStatus(conf *config.Config) (*StateStorage, error) {
+//	//logx.LogAccess.Info("Init App Status Engine as ", conf.Stat.Engine)
+//
+//	var store store2.Store
+//	//nolint:goconst
+//	switch "" {
+//	case "memory":
+//		store = store2.NewMemoryStore()
+//	//case "redis":
+//	//	store = redis.New(conf)
+//	//case "boltdb":
+//	//	store = boltdb.New(conf)
+//	//case "buntdb":
+//	//	store = buntdb.New(conf)
+//	//case "leveldb":
+//	//	store = leveldb.New(conf)
+//	//case "badger":
+//	//	store = badger.New(conf)
+//	default:
+//		log.Printf("storage error: can't find storage driver")
+//		return nil, errors.New("can't find storage driver")
+//	}
+//
+//	StatStorage := NewStateStorage(store)
+//
+//	if err := StatStorage.Init(); err != nil {
+//		log.Printf("storage error: " + err.Error())
+//		return nil, err
+//	}
+//
+//	return StatStorage, nil
+//}

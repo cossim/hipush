@@ -8,7 +8,7 @@ import (
 
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
-		data: sync.Map{},
+		//data: sync.Map{},
 	}
 }
 
@@ -44,6 +44,8 @@ func (m *MemoryStore) Add(key string, value int64) {
 				return
 			}
 		} else {
+			// 如果 key 不存在，则将初始值存储到 data 中
+			m.data.Store(key, value)
 			return
 		}
 	}

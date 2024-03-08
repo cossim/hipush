@@ -78,6 +78,7 @@ type HonorAppConfig struct {
 type Config struct {
 	HTTP    HTTPConfig         `yaml:"http"`
 	GRPC    GRPCConfig         `yaml:"grpc"`
+	Storage Storage            `yaml:"storage"`
 	IOS     []iOSAppConfig     `yaml:"ios"`
 	Huawei  []HuaweiAppConfig  `yaml:"huawei"`
 	Android []AndroidAppConfig `yaml:"android"`
@@ -86,6 +87,11 @@ type Config struct {
 	Xiaomi  []XiaomiAppConfig  `yaml:"xiaomi"`
 	Meizu   []MeizuAppConfig   `yaml:"meizu"`
 	Honor   []HonorAppConfig   `yaml:"honor"`
+}
+
+type Storage struct {
+	Enabled bool   `yaml:"enabled"`
+	Type    string `yaml:"type"`
 }
 
 type HTTPConfig struct {

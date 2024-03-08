@@ -8,6 +8,11 @@ grpc:
   address: "0.0.0.0"
   port: 7071
 
+storage:
+  enabled: true
+  # 存储类型 memory redis
+  type: "memory"
+
 ios:
   - enabled: true
 

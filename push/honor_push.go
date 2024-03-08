@@ -8,6 +8,7 @@ import (
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/status"
+	"github.com/go-logr/logr"
 	"log"
 	"strings"
 	"sync"
@@ -22,11 +23,14 @@ var (
 type HonorService struct {
 	clients map[string]*hClient.HonorPushClient
 	status  *status.StateStorage
+	logger  logr.Logger
 }
 
-func NewHonorService(cfg *config.Config) (*HonorService, error) {
+func NewHonorService(cfg *config.Config, logger logr.Logger) (*HonorService, error) {
 	s := &HonorService{
 		clients: make(map[string]*hClient.HonorPushClient),
+		status:  status.StatStorage,
+		logger:  logger,
 	}
 
 	for _, v := range cfg.Honor {
@@ -127,11 +131,11 @@ func (h *HonorService) send(ctx context.Context, appid string, tokens []string, 
 					log.Printf("honor send expire tokens: %s", res.Data.ExpireTokens)
 				}
 				log.Printf("honor send error: %s", err)
-				h.status.AddHonorSuccess(1)
+				h.status.AddHonorFailed(1)
 
 			} else {
 				log.Printf("honor send success: %s", res.Message)
-				h.status.AddHonorFailed(1)
+				h.status.AddHonorSuccess(1)
 			}
 		}(notification, token)
 	}

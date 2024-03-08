@@ -9,6 +9,7 @@ import (
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/status"
+	"github.com/go-logr/logr"
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/token"
 	"log"
@@ -41,9 +42,10 @@ const (
 type APNsService struct {
 	clients map[string]*apns2.Client
 	status  *status.StateStorage
+	logger  logr.Logger
 }
 
-func NewAPNsService(cfg *config.Config) (*APNsService, error) {
+func NewAPNsService(cfg *config.Config, logger logr.Logger) (*APNsService, error) {
 	var ext string
 	var err error
 	var authKey *ecdsa.PrivateKey
@@ -51,6 +53,8 @@ func NewAPNsService(cfg *config.Config) (*APNsService, error) {
 
 	s := &APNsService{
 		clients: make(map[string]*apns2.Client),
+		status:  status.StatStorage,
+		logger:  logger,
 	}
 
 	for _, v := range cfg.IOS {

@@ -9,6 +9,7 @@ import (
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/status"
+	"github.com/go-logr/logr"
 	"google.golang.org/api/option"
 	"log"
 	"strings"
@@ -24,6 +25,7 @@ var (
 type FCMService struct {
 	clients map[string]*messaging.Client
 	status  *status.StateStorage
+	logger  logr.Logger
 }
 
 //func NewFCMService(cfg *config.Config) (*FCMService, error) {
@@ -44,9 +46,11 @@ type FCMService struct {
 //	return s, nil
 //}
 
-func NewFCMService(cfg *config.Config) (*FCMService, error) {
+func NewFCMService(cfg *config.Config, logger logr.Logger) (*FCMService, error) {
 	s := &FCMService{
 		clients: make(map[string]*messaging.Client),
+		status:  status.StatStorage,
+		logger:  logger,
 	}
 
 	for _, v := range cfg.Android {

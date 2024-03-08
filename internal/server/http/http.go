@@ -8,6 +8,7 @@ import (
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/consts"
 	"github.com/cossim/hipush/internal/factory"
+	"github.com/cossim/hipush/status"
 	"github.com/gin-gonic/gin"
 	"github.com/go-logr/logr"
 	"net/http"
@@ -39,6 +40,7 @@ func (h *Handler) Start(ctx context.Context) error {
 
 	r := gin.Default()
 	r.POST("/api/v1/push", h.pushHandler)
+	r.GET("/api/v1/push/stat", h.pushStatHandler)
 
 	srv := &http.Server{
 		Addr:    h.cfg.HTTP.Addr(),
@@ -79,25 +81,34 @@ func (h *Handler) pushHandler(c *gin.Context) {
 		return
 	}
 
+	status.StatStorage.AddHttpTotal(1)
 	h.logger.Info("Received push request", "platform", req.Platform, "appid", req.AppID, "tokens", req.Token, "data", req.Data)
 
+	var err error
 	switch consts.Platform(req.Platform) {
 	case consts.PlatformIOS:
-		h.handleIOSPush(c, req)
+		err = h.handleIOSPush(c, req)
 	case consts.PlatformAndroid:
-		h.handleAndroidPush(c, req)
+		err = h.handleAndroidPush(c, req)
 	case consts.PlatformHuawei:
-		h.handleHuaweiPush(c, req)
+		err = h.handleHuaweiPush(c, req)
 	case consts.PlatformVivo:
-		h.handleVivoPush(c, req)
+		err = h.handleVivoPush(c, req)
 	case consts.PlatformOppo:
-		h.handleOppoPush(c, req)
+		err = h.handleOppoPush(c, req)
 	case consts.PlatformXiaomi:
-		h.handleXiaomiPush(c, req)
+		err = h.handleXiaomiPush(c, req)
 	case consts.PlatformMeizu:
-		h.handleMeizuPush(c, req)
+		err = h.handleMeizuPush(c, req)
 
 	default:
 		c.JSON(http.StatusBadRequest, Response{Code: http.StatusBadRequest, Msg: "invalid platform", Data: nil})
+		return
+	}
+
+	if err != nil {
+		status.StatStorage.AddHttpFailed(1)
+	} else {
+		status.StatStorage.AddHttpSuccess(1)
 	}
 }

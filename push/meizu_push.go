@@ -9,6 +9,7 @@ import (
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/status"
+	"github.com/go-logr/logr"
 	"log"
 	"strings"
 	"sync"
@@ -22,11 +23,14 @@ var (
 type MeizuService struct {
 	clients map[string]func(token, message string) mzp.PushResponse
 	status  *status.StateStorage
+	logger  logr.Logger
 }
 
-func NewMeizuService(cfg *config.Config) (*MeizuService, error) {
+func NewMeizuService(cfg *config.Config, logger logr.Logger) (*MeizuService, error) {
 	s := &MeizuService{
 		clients: make(map[string]func(token, message string) mzp.PushResponse),
+		status:  status.StatStorage,
+		logger:  logger,
 	}
 
 	for _, v := range cfg.Meizu {

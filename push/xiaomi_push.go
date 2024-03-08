@@ -7,6 +7,7 @@ import (
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/status"
+	"github.com/go-logr/logr"
 	xp "github.com/yilee/xiaomi-push"
 	"log"
 	"strings"
@@ -21,11 +22,14 @@ var (
 type XiaomiPushService struct {
 	clients map[string]*xp.MiPush
 	status  *status.StateStorage
+	logger  logr.Logger
 }
 
-func NewXiaomiService(cfg *config.Config) (*XiaomiPushService, error) {
+func NewXiaomiService(cfg *config.Config, logger logr.Logger) (*XiaomiPushService, error) {
 	s := &XiaomiPushService{
 		clients: map[string]*xp.MiPush{},
+		status:  status.StatStorage,
+		logger:  logger,
 	}
 
 	for _, v := range cfg.Xiaomi {
@@ -82,6 +86,10 @@ func (x *XiaomiPushService) Send(ctx context.Context, request interface{}, opt .
 			break
 		}
 	}
+
+	fmt.Println("total count => ", x.status.GetXiaomiTotal())
+	fmt.Println("success count => ", x.status.GetXiaomiSuccess())
+	fmt.Println("failed count => ", x.status.GetXiaomiFailed())
 
 	var errorMsgs []string
 	for _, err := range es {
@@ -165,10 +173,10 @@ func (x *XiaomiPushService) send(ctx context.Context, appID string, tokens []str
 				if res != nil && res.Code != 0 {
 					newTokens = append(newTokens, token)
 				}
-				log.Printf("oppo send error: %s", err)
+				log.Printf("xiaomi send error: %s", err)
 				x.status.AddXiaomiFailed(1)
 			} else {
-				log.Printf("oppo send success: %s", res.Reason)
+				log.Printf("xiaomi send success: %s", res.Reason)
 				x.status.AddXiaomiSuccess(1)
 			}
 		}(message, token)

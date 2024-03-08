@@ -10,6 +10,7 @@ import (
 	g "github.com/cossim/hipush/internal/server/grpc"
 	h "github.com/cossim/hipush/internal/server/http"
 	"github.com/cossim/hipush/push"
+	"github.com/cossim/hipush/status"
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
 	"log"
@@ -40,11 +41,16 @@ func main() {
 		log.Fatalf("Neither HTTP nor GRPC server is enabled. Please enable at least one server.")
 	}
 
+	if err := status.InitAppStatus(cfg); err != nil {
+		panic(err)
+	}
+
 	zapLogger := zap.NewExample()
+	logger := zapr.NewLogger(zapLogger)
 
 	pushServiceFactory := factory.NewPushServiceFactory()
 	pushServiceFactory.Register(consts.PlatformIOS.String(), func() push.PushService {
-		svc, err := push.NewAPNsService(cfg)
+		svc, err := push.NewAPNsService(cfg, logger)
 		if err != nil {
 			panic(err)
 		}
@@ -52,7 +58,7 @@ func main() {
 	})
 
 	pushServiceFactory.Register(consts.PlatformAndroid.String(), func() push.PushService {
-		svc, err := push.NewFCMService(cfg)
+		svc, err := push.NewFCMService(cfg, logger)
 		if err != nil {
 			panic(err)
 		}
@@ -60,7 +66,7 @@ func main() {
 	})
 
 	pushServiceFactory.Register(consts.PlatformHuawei.String(), func() push.PushService {
-		svc, err := push.NewHMSService(cfg)
+		svc, err := push.NewHMSService(cfg, logger)
 		if err != nil {
 			panic(err)
 		}
@@ -68,7 +74,7 @@ func main() {
 	})
 
 	pushServiceFactory.Register(consts.PlatformVivo.String(), func() push.PushService {
-		svc, err := push.NewVivoService(cfg)
+		svc, err := push.NewVivoService(cfg, logger)
 		if err != nil {
 			panic(err)
 		}
@@ -76,7 +82,7 @@ func main() {
 	})
 
 	pushServiceFactory.Register(consts.PlatformOppo.String(), func() push.PushService {
-		svc, err := push.NewOppoService(cfg)
+		svc, err := push.NewOppoService(cfg, logger)
 		if err != nil {
 			panic(err)
 		}
@@ -84,7 +90,7 @@ func main() {
 	})
 
 	pushServiceFactory.Register(consts.PlatformXiaomi.String(), func() push.PushService {
-		svc, err := push.NewXiaomiService(cfg)
+		svc, err := push.NewXiaomiService(cfg, logger)
 		if err != nil {
 			panic(err)
 		}
@@ -92,7 +98,7 @@ func main() {
 	})
 
 	pushServiceFactory.Register(consts.PlatformMeizu.String(), func() push.PushService {
-		svc, err := push.NewMeizuService(cfg)
+		svc, err := push.NewMeizuService(cfg, logger)
 		if err != nil {
 			panic(err)
 		}
@@ -100,7 +106,7 @@ func main() {
 	})
 
 	pushServiceFactory.Register(consts.PlatformHonor.String(), func() push.PushService {
-		svc, err := push.NewHonorService(cfg)
+		svc, err := push.NewHonorService(cfg, logger)
 		if err != nil {
 			panic(err)
 		}
@@ -116,7 +122,7 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			httpHandler := h.NewHandler(cfg, zapr.NewLogger(zapLogger), pushServiceFactory)
+			httpHandler := h.NewHandler(cfg, logger, pushServiceFactory)
 			if err := httpHandler.Start(ctx); err != nil {
 				log.Fatalf("failed to start HTTP server: %v", err)
 			}
@@ -127,7 +133,7 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			grpcHandler := g.NewHandler(cfg, zapr.NewLogger(zapLogger), pushServiceFactory)
+			grpcHandler := g.NewHandler(cfg, logger, pushServiceFactory)
 			if err := grpcHandler.Start(ctx); err != nil {
 				log.Fatalf("failed to start GRPC server: %v", err)
 			}
@@ -143,6 +149,7 @@ func main() {
 			return
 		case <-sig:
 			log.Println("receive system signal, cancel context")
+			status.StatStorage.Close()
 			cancel()
 		}
 	}()

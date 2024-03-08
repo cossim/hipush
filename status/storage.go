@@ -10,9 +10,7 @@ type StateStorage struct {
 }
 
 func NewStateStorage(store store.Store) *StateStorage {
-	return &StateStorage{
-		store: store,
-	}
+	return &StateStorage{store: store}
 }
 
 func (s *StateStorage) Init() error {
@@ -68,6 +66,30 @@ func (s *StateStorage) Reset() {
 
 func (s *StateStorage) AddTotalCount(count int64) {
 	s.store.Add(consts.HiPushTotal, count)
+}
+
+func (s *StateStorage) AddHttpTotal(count int64) {
+	s.store.Add(consts.HTTPTotal, count)
+}
+
+func (s *StateStorage) AddHttpSuccess(count int64) {
+	s.store.Add(consts.HTTPSuccess, count)
+}
+
+func (s *StateStorage) AddHttpFailed(count int64) {
+	s.store.Add(consts.HTTPFailed, count)
+}
+
+func (s *StateStorage) AddGrpcTotal(count int64) {
+	s.store.Add(consts.GRPCTotal, count)
+}
+
+func (s *StateStorage) AddGrpcSuccess(count int64) {
+	s.store.Add(consts.GRPCSuccess, count)
+}
+
+func (s *StateStorage) AddGrpcFailed(count int64) {
+	s.store.Add(consts.GRPCFailed, count)
 }
 
 func (s *StateStorage) AddIosTotal(count int64) {
@@ -168,7 +190,70 @@ func (s *StateStorage) AddHonorFailed(count int64) {
 
 // GetTotalCount show counts of all notification.
 func (s *StateStorage) GetTotalCount() int64 {
-	return s.store.Get(consts.HiPushTotal)
+	//return s.store.Get(consts.HiPushTotal)
+	var count int64
+	//count += s.GetAndroidTotal()
+	//count += s.GetIosTotal()
+	//count += s.GetHuaweiTotal()
+	//count += s.GetXiaomiTotal()
+	//count += s.GetVivoTotal()
+	//count += s.GetOppoTotal()
+	//count += s.GetMeizuTotal()
+	//count += s.GetHonorTotal()
+	count = s.GetHttpTotal() + s.GetGrpcTotal()
+	return count
+}
+
+func (s *StateStorage) GetSuccessCount() int64 {
+	var count int64
+	//count += s.GetAndroidSuccess()
+	//count += s.GetIosSuccess()
+	//count += s.GetHuaweiSuccess()
+	//count += s.GetXiaomiSuccess()
+	//count += s.GetVivoSuccess()
+	//count += s.GetOppoSuccess()
+	//count += s.GetMeizuSuccess()
+	//count += s.GetHonorSuccess()
+	count = s.GetHttpSuccess() + s.GetGrpcSuccess()
+	return count
+}
+
+func (s *StateStorage) GetFailedCount() int64 {
+	var count int64
+	//count += s.GetAndroidFailed()
+	//count += s.GetIosFailed()
+	//count += s.GetHuaweiFailed()
+	//count += s.GetXiaomiFailed()
+	//count += s.GetVivoFailed()
+	//count += s.GetOppoFailed()
+	//count += s.GetMeizuFailed()
+	//count += s.GetHonorFailed()
+	count = s.GetHttpFailed() + s.GetGrpcFailed()
+	return count
+}
+
+func (s *StateStorage) GetHttpTotal() int64 {
+	return s.store.Get(consts.HTTPTotal)
+}
+
+func (s *StateStorage) GetHttpSuccess() int64 {
+	return s.store.Get(consts.HTTPSuccess)
+}
+
+func (s *StateStorage) GetHttpFailed() int64 {
+	return s.store.Get(consts.HTTPFailed)
+}
+
+func (s *StateStorage) GetGrpcTotal() int64 {
+	return s.store.Get(consts.GRPCTotal)
+}
+
+func (s *StateStorage) GetGrpcSuccess() int64 {
+	return s.store.Get(consts.GRPCSuccess)
+}
+
+func (s *StateStorage) GetGrpcFailed() int64 {
+	return s.store.Get(consts.GRPCFailed)
 }
 
 func (s *StateStorage) GetIosTotal() int64 {
@@ -255,4 +340,16 @@ func (s *StateStorage) GetMeizuSuccess() int64 {
 
 func (s *StateStorage) GetMeizuFailed() int64 {
 	return s.store.Get(consts.MeizuFailed)
+}
+
+func (s *StateStorage) GetHonorTotal() int64 {
+	return s.store.Get(consts.HonorTotal)
+}
+
+func (s *StateStorage) GetHonorSuccess() int64 {
+	return s.store.Get(consts.HonorSuccess)
+}
+
+func (s *StateStorage) GetHonorFailed() int64 {
+	return s.store.Get(consts.HonorFailed)
 }

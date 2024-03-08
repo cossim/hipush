@@ -8,6 +8,7 @@ import (
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/status"
 	vp "github.com/cossim/vivo-push"
+	"github.com/go-logr/logr"
 	"log"
 	"strings"
 	"sync"
@@ -15,18 +16,21 @@ import (
 
 var (
 	// MaxConcurrentVivoPushes pool to limit the number of concurrent iOS pushes
-	MaxConcurrentVivoPushes chan struct{}
+	MaxConcurrentVivoPushes = make(chan struct{}, 100)
 )
 
 // VivoService 实现vivo推送，实现 PushService 接口
 type VivoService struct {
 	clients map[string]*vp.VivoPush
 	status  *status.StateStorage
+	logger  logr.Logger
 }
 
-func NewVivoService(cfg *config.Config) (*VivoService, error) {
+func NewVivoService(cfg *config.Config, logger logr.Logger) (*VivoService, error) {
 	s := &VivoService{
 		clients: map[string]*vp.VivoPush{},
+		status:  status.StatStorage,
+		logger:  logger,
 	}
 
 	for _, v := range cfg.Vivo {
@@ -70,6 +74,8 @@ func (v *VivoService) Send(ctx context.Context, request interface{}, opt ...Send
 			es = append(es, err)
 		}
 		// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
+		fmt.Println("retryCount => ", retryCount)
+		fmt.Println("maxRetry => ", maxRetry)
 		if len(newTokens) > 0 && retryCount < maxRetry {
 			retryCount++
 			req.Tokens = newTokens
