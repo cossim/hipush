@@ -136,7 +136,7 @@ func (m *MeizuService) send(appid string, tokens []string, message string) ([]st
 				newTokens = append(newTokens, token)
 				m.status.AddMeizuFailed(1)
 			} else {
-				log.Printf("oppo send success: %s", res.GetMessage())
+				log.Printf("oppo send success code: %v msg: %s", res.GetCode(), res.GetMessage())
 				m.status.AddMeizuSuccess(1)
 			}
 		}(message, token)

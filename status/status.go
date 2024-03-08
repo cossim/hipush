@@ -19,13 +19,15 @@ func InitAppStatus(cfg *config.Config) error {
 	switch cfg.Storage.Type {
 	case "memory":
 		s = store.NewMemoryStore()
+	case "file":
+		s = store.NewFileStore(cfg.Storage.Path)
 	default:
 		//logx.LogError.Error("storage error: can't find storage driver")
 		return errors.New("can't find storage driver")
 	}
 
 	StatStorage = NewStateStorage(s)
-	return nil
+	return StatStorage.Init()
 }
 
 // App is status structure

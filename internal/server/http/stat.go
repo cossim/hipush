@@ -58,9 +58,9 @@ func (h *Handler) pushStatHandler(c *gin.Context) {
 	ps.Meizu.Success = status.StatStorage.GetMeizuSuccess()
 	ps.Meizu.Failed = status.StatStorage.GetMeizuFailed()
 
-	ps.Honor.Total = status.StatStorage.GetMeizuTotal()
-	ps.Honor.Success = status.StatStorage.GetMeizuSuccess()
-	ps.Honor.Failed = status.StatStorage.GetMeizuFailed()
+	ps.Honor.Total = status.StatStorage.GetHonorTotal()
+	ps.Honor.Success = status.StatStorage.GetHonorSuccess()
+	ps.Honor.Failed = status.StatStorage.GetHonorFailed()
 
 	c.JSON(http.StatusOK, Response{Code: http.StatusOK, Msg: "Get push stat success", Data: ps})
 }

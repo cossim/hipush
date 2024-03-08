@@ -92,6 +92,7 @@ type Config struct {
 type Storage struct {
 	Enabled bool   `yaml:"enabled"`
 	Type    string `yaml:"type"`
+	Path    string `yaml:"path"`
 }
 
 type HTTPConfig struct {
