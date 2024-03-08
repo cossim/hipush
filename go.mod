@@ -7,7 +7,7 @@ require (
 	github.com/316014408/oppo-push v0.0.0-20190427030828-462d62e6b171
 	github.com/appleboy/go-fcm v0.1.6
 	github.com/cossim/go-hms-push v0.0.0-20240301034220-38310a1d80e5
-	github.com/cossim/go-meizu-push-sdk v0.0.0-20240306071207-456c3a8650c6
+	github.com/cossim/go-meizu-push-sdk v0.0.0-20240308111828-f4255aaae3ac
 	github.com/cossim/vivo-push v0.0.0-20240301025332-148acd987861
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-logr/logr v1.4.1
@@ -16,9 +16,10 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/sideshow/apns2 v0.23.0
+	github.com/thoas/stats v0.0.0-20190407194641-965cb2de1678
 	github.com/yilee/xiaomi-push v0.0.0-20170213073944-562fbb07388e
 	go.uber.org/zap v1.27.0
-	google.golang.org/api v0.168.0
+	google.golang.org/api v0.169.0
 	google.golang.org/grpc v1.62.1
 	google.golang.org/protobuf v1.33.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -58,7 +59,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
-	github.com/thoas/stats v0.0.0-20190407194641-965cb2de1678 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	go.opencensus.io v0.24.0 // indirect
