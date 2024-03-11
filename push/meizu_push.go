@@ -7,6 +7,7 @@ import (
 	"fmt"
 	mzp "github.com/cossim/go-meizu-push-sdk"
 	"github.com/cossim/hipush/config"
+	"github.com/cossim/hipush/consts"
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/status"
 	"github.com/go-logr/logr"
@@ -200,32 +201,6 @@ func (m *MeizuService) buildNotification(req *notify.MeizuPushNotification) (str
 	return string(message), nil
 }
 
-func (m *MeizuService) SendMulticast(ctx context.Context, req interface{}, opt ...MulticastOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (m *MeizuService) Subscribe(ctx context.Context, req interface{}, opt ...SubscribeOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (m *MeizuService) Unsubscribe(ctx context.Context, req interface{}, opt ...UnsubscribeOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (m *MeizuService) SendToTopic(ctx context.Context, req interface{}, opt ...TopicOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (m *MeizuService) CheckDevice(ctx context.Context, req interface{}, opt ...CheckDeviceOption) bool {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (m *MeizuService) Name() string {
-	//TODO implement me
-	panic("implement me")
+	return consts.PlatformMeizu.String()
 }

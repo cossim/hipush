@@ -6,6 +6,7 @@ import (
 	"fmt"
 	op "github.com/316014408/oppo-push"
 	"github.com/cossim/hipush/config"
+	"github.com/cossim/hipush/consts"
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/status"
 	"github.com/go-logr/logr"
@@ -191,32 +192,6 @@ func (o *OppoService) buildNotification(req *notify.OppoPushNotification) (*op.M
 	return m, nil
 }
 
-func (o *OppoService) SendMulticast(ctx context.Context, req interface{}, opt ...MulticastOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (o *OppoService) Subscribe(ctx context.Context, req interface{}, opt ...SubscribeOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (o *OppoService) Unsubscribe(ctx context.Context, req interface{}, opt ...UnsubscribeOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (o *OppoService) SendToTopic(ctx context.Context, req interface{}, opt ...TopicOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (o *OppoService) CheckDevice(ctx context.Context, req interface{}, opt ...CheckDeviceOption) bool {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (o *OppoService) Name() string {
-	//TODO implement me
-	panic("implement me")
+	return consts.PlatformOppo.String()
 }

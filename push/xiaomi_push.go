@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cossim/hipush/config"
+	"github.com/cossim/hipush/consts"
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/status"
 	"github.com/go-logr/logr"
@@ -193,32 +194,6 @@ func (x *XiaomiPushService) send(ctx context.Context, appID string, tokens []str
 	return newTokens, nil
 }
 
-func (x *XiaomiPushService) SendMulticast(ctx context.Context, req interface{}, opt ...MulticastOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (x *XiaomiPushService) Subscribe(ctx context.Context, req interface{}, opt ...SubscribeOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (x *XiaomiPushService) Unsubscribe(ctx context.Context, req interface{}, opt ...UnsubscribeOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (x *XiaomiPushService) SendToTopic(ctx context.Context, req interface{}, opt ...TopicOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (x *XiaomiPushService) CheckDevice(ctx context.Context, req interface{}, opt ...CheckDeviceOption) bool {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (x *XiaomiPushService) Name() string {
-	//TODO implement me
-	panic("implement me")
+	return consts.PlatformXiaomi.String()
 }

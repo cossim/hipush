@@ -7,6 +7,7 @@ import (
 	"firebase.google.com/go/messaging"
 	"fmt"
 	"github.com/cossim/hipush/config"
+	"github.com/cossim/hipush/consts"
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/status"
 	"github.com/go-logr/logr"
@@ -269,32 +270,6 @@ func (f *FCMService) buildAndroidNotification(req *notify.FCMPushNotification) *
 	return notification
 }
 
-func (f *FCMService) SendMulticast(ctx context.Context, req interface{}, opt ...MulticastOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (f *FCMService) Subscribe(ctx context.Context, req interface{}, opt ...SubscribeOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (f *FCMService) Unsubscribe(ctx context.Context, req interface{}, opt ...UnsubscribeOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (f *FCMService) SendToTopic(ctx context.Context, req interface{}, opt ...TopicOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (f *FCMService) CheckDevice(ctx context.Context, req interface{}, opt ...CheckDeviceOption) bool {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (f *FCMService) Name() string {
-	//TODO implement me
-	panic("implement me")
+	return consts.PlatformAndroid.String()
 }

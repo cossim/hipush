@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cossim/hipush/config"
+	"github.com/cossim/hipush/consts"
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/status"
 	vp "github.com/cossim/vivo-push"
@@ -214,32 +215,6 @@ func (v *VivoService) buildNotification(req *notify.VivoPushNotification) (*vp.M
 	return message, nil
 }
 
-func (v *VivoService) SendMulticast(ctx context.Context, req interface{}, opt ...MulticastOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (v *VivoService) Subscribe(ctx context.Context, req interface{}, opt ...SubscribeOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (v *VivoService) Unsubscribe(ctx context.Context, req interface{}, opt ...UnsubscribeOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (v *VivoService) SendToTopic(ctx context.Context, req interface{}, opt ...TopicOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (v *VivoService) CheckDevice(ctx context.Context, req interface{}, opt ...CheckDeviceOption) bool {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (v *VivoService) Name() string {
-	//TODO implement me
-	panic("implement me")
+	return consts.PlatformVivo.String()
 }

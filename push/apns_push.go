@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cossim/hipush/config"
+	"github.com/cossim/hipush/consts"
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/status"
 	"github.com/go-logr/logr"
@@ -359,32 +360,6 @@ func (a *APNsService) checkNotification(req *notify.ApnsPushNotification) error 
 	return nil
 }
 
-func (a *APNsService) SendMulticast(ctx context.Context, req interface{}, opt ...MulticastOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (a *APNsService) Subscribe(ctx context.Context, req interface{}, opt ...SubscribeOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (a *APNsService) Unsubscribe(ctx context.Context, req interface{}, opt ...UnsubscribeOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (a *APNsService) SendToTopic(ctx context.Context, req interface{}, opt ...TopicOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (a *APNsService) CheckDevice(ctx context.Context, req interface{}, opt ...CheckDeviceOption) bool {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (a *APNsService) Name() string {
-	//TODO implement me
-	panic("implement me")
+	return consts.PlatformIOS.String()
 }

@@ -9,6 +9,7 @@ import (
 	client "github.com/cossim/go-hms-push/push/core"
 	"github.com/cossim/go-hms-push/push/model"
 	"github.com/cossim/hipush/config"
+	"github.com/cossim/hipush/consts"
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/status"
 	"github.com/go-logr/logr"
@@ -290,32 +291,6 @@ func (h *HMSService) buildNotification(req *notify.HMSPushNotification) (*model.
 	return msgRequest, nil
 }
 
-func (h *HMSService) SendMulticast(ctx context.Context, req interface{}, opt ...MulticastOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h *HMSService) Subscribe(ctx context.Context, req interface{}, opt ...SubscribeOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h *HMSService) Unsubscribe(ctx context.Context, req interface{}, opt ...UnsubscribeOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h *HMSService) SendToTopic(ctx context.Context, req interface{}, opt ...TopicOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h *HMSService) CheckDevice(ctx context.Context, req interface{}, opt ...CheckDeviceOption) bool {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (h *HMSService) Name() string {
-	//TODO implement me
-	panic("implement me")
+	return consts.PlatformHuawei.String()
 }

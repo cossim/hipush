@@ -95,21 +95,6 @@ type PushService interface {
 	// Send 发送消息给单个设备
 	Send(ctx context.Context, req interface{}, opt ...SendOption) error
 
-	// SendMulticast 发送消息给多个设备
-	SendMulticast(ctx context.Context, req interface{}, opt ...MulticastOption) error
-
-	// Subscribe 订阅特定主题
-	Subscribe(ctx context.Context, req interface{}, opt ...SubscribeOption) error
-
-	// Unsubscribe 取消订阅特定主题
-	Unsubscribe(ctx context.Context, req interface{}, opt ...UnsubscribeOption) error
-
-	// SendToTopic 发送消息到特定主题
-	SendToTopic(ctx context.Context, req interface{}, opt ...TopicOption) error
-
-	// CheckDevice 检查设备是否可用
-	CheckDevice(ctx context.Context, req interface{}, opt ...CheckDeviceOption) bool
-
-	// Name 获取推送服务的名称
+	// Name 获取推送的手机厂商名称
 	Name() string
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	hClient "github.com/cossim/hipush/client/push"
 	"github.com/cossim/hipush/config"
+	"github.com/cossim/hipush/consts"
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/status"
 	"github.com/go-logr/logr"
@@ -213,32 +214,6 @@ func (h *HonorService) buildAndroidNotification(req *notify.HonorPushNotificatio
 	return sendMessageReq
 }
 
-func (h *HonorService) SendMulticast(ctx context.Context, req interface{}, opt ...MulticastOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h *HonorService) Subscribe(ctx context.Context, req interface{}, opt ...SubscribeOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h *HonorService) Unsubscribe(ctx context.Context, req interface{}, opt ...UnsubscribeOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h *HonorService) SendToTopic(ctx context.Context, req interface{}, opt ...TopicOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (h *HonorService) CheckDevice(ctx context.Context, req interface{}, opt ...CheckDeviceOption) bool {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (h *HonorService) Name() string {
-	//TODO implement me
-	panic("implement me")
+	return consts.PlatformHonor.String()
 }
