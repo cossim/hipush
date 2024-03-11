@@ -2,6 +2,11 @@ package push
 
 import (
 	"context"
+	"errors"
+	"log"
+	"strings"
+	"sync"
+	"time"
 )
 
 // PushRequest 获取不同厂商的推送请求参数
@@ -97,4 +102,67 @@ type PushService interface {
 
 	// Name 获取推送的手机厂商名称
 	Name() string
+}
+
+type Response struct {
+	Code int         `json:"code"`
+	Msg  string      `json:"msg"`
+	Data interface{} `json:"data"`
+}
+
+const (
+	Success = 200
+	Fail    = 400
+)
+
+type SendFunc func(ctx context.Context, token string) (*Response, error)
+
+func RetrySend(ctx context.Context, send SendFunc, tokens []string, retry int, retryInterval time.Duration, maxConcurrent int) error {
+	var wg sync.WaitGroup
+	if retryInterval <= 0 {
+		retryInterval = time.Second
+	}
+	if maxConcurrent <= 0 {
+		maxConcurrent = 100
+	}
+	var MaxConcurrentPushes = make(chan struct{}, maxConcurrent)
+	var es []error
+
+	for _, token := range tokens {
+		// occupy push slot
+		MaxConcurrentPushes <- struct{}{}
+		wg.Add(1)
+		go func(token string) {
+			defer func() {
+				// free push slot
+				<-MaxConcurrentPushes
+				wg.Done()
+			}()
+			for i := 0; i <= retry; i++ {
+				res, err := send(ctx, token)
+				if err != nil || (res != nil && res.Code != 200) {
+					if err == nil {
+						err = errors.New(res.Msg)
+					} else {
+						es = append(es, err)
+					}
+					log.Printf("send error: %s (attempt %d)", err, i+1)
+					time.Sleep(retryInterval)
+				} else {
+					log.Printf("send success: %s", res.Msg)
+					break
+				}
+			}
+		}(token)
+	}
+	wg.Wait()
+	if len(es) > 0 {
+		var errorStrings []string
+		for _, err := range es {
+			errorStrings = append(errorStrings, err.Error())
+		}
+		allErrorsString := strings.Join(errorStrings, ", ")
+		return errors.New(allErrorsString)
+	}
+	return nil
 }

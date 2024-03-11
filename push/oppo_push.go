@@ -3,7 +3,6 @@ package push
 import (
 	"context"
 	"errors"
-	"fmt"
 	op "github.com/316014408/oppo-push"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/consts"
@@ -11,8 +10,6 @@ import (
 	"github.com/cossim/hipush/status"
 	"github.com/go-logr/logr"
 	"log"
-	"strings"
-	"sync"
 )
 
 var (
@@ -53,17 +50,6 @@ func (o *OppoService) Send(ctx context.Context, request interface{}, opt ...Send
 	so := &SendOptions{}
 	so.ApplyOptions(opt)
 
-	var (
-		retry      = so.Retry
-		maxRetry   = retry
-		retryCount = 0
-		es         []error
-	)
-
-	if retry > 0 && retry < maxRetry {
-		maxRetry = retry
-	}
-
 	if err := o.checkNotification(req); err != nil {
 		return err
 	}
@@ -77,85 +63,63 @@ func (o *OppoService) Send(ctx context.Context, request interface{}, opt ...Send
 		return nil
 	}
 
-	for {
-		newTokens, err := o.send(req.AppID, req.Tokens, notification)
-		if err != nil {
-			log.Printf("send error => %v", err)
-			es = append(es, err)
-		}
-		// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
-		if len(newTokens) > 0 && retryCount < maxRetry {
-			retryCount++
-			req.Tokens = newTokens
-		} else {
-			break
-		}
+	send := func(ctx context.Context, token string) (*Response, error) {
+		return o.send(req.AppID, token, notification)
 	}
+	return RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
 
-	var errorMsgs []string
-	for _, err := range es {
-		errorMsgs = append(errorMsgs, err.Error())
-	}
-	if len(errorMsgs) > 0 {
-		return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
-	}
-	return nil
+	//for {
+	//	newTokens, err := o.send(req.AppID, req.Tokens, notification)
+	//	if err != nil {
+	//		log.Printf("send error => %v", err)
+	//		es = append(es, err)
+	//	}
+	//	// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
+	//	if len(newTokens) > 0 && retryCount < maxRetry {
+	//		retryCount++
+	//		req.Tokens = newTokens
+	//	} else {
+	//		break
+	//	}
+	//}
+	//
+	//var errorMsgs []string
+	//for _, err := range es {
+	//	errorMsgs = append(errorMsgs, err.Error())
+	//}
+	//if len(errorMsgs) > 0 {
+	//	return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
+	//}
+	//return nil
 }
 
-func (o *OppoService) send(appID string, tokens []string, message *op.Message) ([]string, error) {
-	var newTokens []string
-	var wg sync.WaitGroup
-	fmt.Println("appID:", appID)
+func (o *OppoService) send(appID string, token string, notification *op.Message) (*Response, error) {
 	client, ok := o.clients[appID]
 	if !ok {
 		return nil, errors.New("invalid appid or appid push is not enabled")
 	}
 
-	var es []error
-
-	for _, token := range tokens {
-		// occupy push slot
-		MaxConcurrentOppoPushes <- struct{}{}
-		wg.Add(1)
-		o.status.AddOppoTotal(1)
-		go func(notification *op.Message, token string) {
-			defer func() {
-				// free push slot
-				<-MaxConcurrentOppoPushes
-				wg.Done()
-			}()
-
-			notification.SetTargetValue(token)
-			fmt.Println("notification => ", notification.String())
-			res, err := client.Unicast(notification)
-			if err != nil || (res != nil && res.Code != 0) {
-				if err == nil {
-					err = errors.New(res.Message)
-				} else {
-					es = append(es, err)
-				}
-				// 记录失败的 Token
-				if res != nil && res.Code != 0 {
-					newTokens = append(newTokens, token)
-				}
-				log.Printf("oppo send error: %s", err)
-				o.status.AddOppoFailed(1)
-			} else {
-				log.Printf("oppo send success: %s", res.Message)
-				o.status.AddOppoSuccess(1)
-			}
-		}(message, token)
+	resp := &Response{Code: Fail}
+	notification.SetTargetValue(token)
+	res, err := client.Unicast(notification)
+	if err != nil {
+		log.Printf("oppo send error: %s", err)
+		o.status.AddOppoFailed(1)
+		resp.Msg = err.Error()
+	} else if res != nil && res.Code != 0 {
+		log.Printf("oppo send error: %s", res.Message)
+		o.status.AddOppoFailed(1)
+		err = errors.New(res.Message)
+		resp.Code = res.Code
+		resp.Msg = res.Message
+	} else {
+		log.Printf("oppo send success: %s", res.Message)
+		o.status.AddOppoSuccess(1)
+		resp.Code = Success
+		resp.Msg = res.Message
 	}
-	wg.Wait()
-	if len(es) > 0 {
-		var errorStrings []string
-		for _, err := range es {
-			errorStrings = append(errorStrings, err.Error())
-		}
-		allErrorsString := strings.Join(errorStrings, ", ")
-		return nil, errors.New(allErrorsString)
-	}
-	return newTokens, nil
+
+	return resp, err
 }
 
 func (o *OppoService) checkNotification(req *notify.OppoPushNotification) error {

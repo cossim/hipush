@@ -5,7 +5,6 @@ import (
 	"errors"
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/messaging"
-	"fmt"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/consts"
 	"github.com/cossim/hipush/notify"
@@ -14,7 +13,6 @@ import (
 	"google.golang.org/api/option"
 	"log"
 	"strings"
-	"sync"
 )
 
 var (
@@ -84,14 +82,6 @@ func (f *FCMService) Send(ctx context.Context, request interface{}, opt ...SendO
 		return errors.New("invalid request")
 	}
 
-	// 设置一个默认的最大重试次数
-	var maxRetry = req.Retry
-	var retryCount int
-	var es []error
-	if maxRetry <= 0 {
-		maxRetry = DefaultMaxRetry
-	}
-
 	so := &SendOptions{}
 	so.ApplyOptions(opt)
 
@@ -105,75 +95,62 @@ func (f *FCMService) Send(ctx context.Context, request interface{}, opt ...SendO
 		return nil
 	}
 
-	for {
-		newTokens, err := f.send(ctx, req.AppID, req.Tokens, notification)
-		if err != nil {
-			log.Printf("send error => %v", err)
-			es = append(es, err)
-		}
-		// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
-		if len(newTokens) > 0 && retryCount < maxRetry {
-			retryCount++
-			req.Tokens = newTokens
-		} else {
-			break
-		}
+	send := func(ctx context.Context, token string) (*Response, error) {
+		return f.send(ctx, req.AppID, token, notification)
 	}
+	return RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
 
-	var errorMsgs []string
-	for _, err := range es {
-		errorMsgs = append(errorMsgs, err.Error())
-	}
-	if len(errorMsgs) > 0 {
-		return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
-	}
-	return nil
+	//for {
+	//	newTokens, err := f.send(ctx, req.AppID, req.Tokens, notification)
+	//	if err != nil {
+	//		log.Printf("send error => %v", err)
+	//		es = append(es, err)
+	//	}
+	//	// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
+	//	if len(newTokens) > 0 && retryCount < maxRetry {
+	//		retryCount++
+	//		req.Tokens = newTokens
+	//	} else {
+	//		break
+	//	}
+	//}
+	//
+	//var errorMsgs []string
+	//for _, err := range es {
+	//	errorMsgs = append(errorMsgs, err.Error())
+	//}
+	//if len(errorMsgs) > 0 {
+	//	return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
+	//}
+	//return nil
 }
 
-func (f *FCMService) send(ctx context.Context, appid string, tokens []string, notification *messaging.Message) ([]string, error) {
-	var newTokens []string
-	var wg sync.WaitGroup
-
+func (f *FCMService) send(ctx context.Context, appid string, token string, notification *messaging.Message) (*Response, error) {
 	client, ok := f.clients[appid]
 	if !ok {
 		return nil, errors.New("invalid appid or appid push is not enabled")
 	}
 
-	var es []error
+	resp := &Response{Code: Fail}
 
-	for _, token := range tokens {
-		// occupy push slot
-		MaxConcurrentAndroidPushes <- struct{}{}
-		wg.Add(1)
-		f.status.AddAndroidTotal(1)
-		go func(notification *messaging.Message, token string) {
-			defer func() {
-				// free push slot
-				<-MaxConcurrentAndroidPushes
-				wg.Done()
-			}()
-
-			res, err := client.Send(ctx, notification)
-			if err != nil {
-				log.Printf("fcm send error: %s", err)
-				newTokens = append(newTokens, token)
-				f.status.AddAndroidFailed(1)
-			} else {
-				log.Printf("fcm send success: %s", res)
-				f.status.AddAndroidSuccess(1)
-			}
-		}(notification, token)
-	}
-	wg.Wait()
-	if len(es) > 0 {
-		var errorStrings []string
-		for _, err := range es {
-			errorStrings = append(errorStrings, err.Error())
+	notification.Token = token
+	res, err := client.Send(ctx, notification)
+	if err != nil {
+		log.Printf("fcm send error: %s", err)
+		f.status.AddAndroidFailed(1)
+		if res != "" {
+			resp.Msg = res
+		} else {
+			resp.Msg = err.Error()
 		}
-		allErrorsString := strings.Join(errorStrings, ", ")
-		return nil, errors.New(allErrorsString)
+	} else {
+		log.Printf("fcm send success: %s", res)
+		f.status.AddAndroidSuccess(1)
+		resp.Code = Success
+		resp.Msg = res
 	}
-	return newTokens, nil
+
+	return resp, nil
 }
 
 // checkNotification for check request message
@@ -220,8 +197,8 @@ func (f *FCMService) buildAndroidNotification(req *notify.FCMPushNotification) *
 	}
 
 	if len(req.Tokens) > 0 {
-		notification.Token = ""
-		notification.Token = req.Tokens[0]
+		//notification.Token = ""
+		//notification.Token = req.Tokens[0]
 	}
 
 	if req.Priority == HIGH || req.Priority == "normal" {

@@ -4,9 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	c "github.com/cossim/go-hms-push/push/config"
-	client "github.com/cossim/go-hms-push/push/core"
+	hClient "github.com/cossim/go-hms-push/push/core"
 	"github.com/cossim/go-hms-push/push/model"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/consts"
@@ -14,8 +13,6 @@ import (
 	"github.com/cossim/hipush/status"
 	"github.com/go-logr/logr"
 	"log"
-	"strings"
-	"sync"
 )
 
 const (
@@ -35,14 +32,14 @@ var (
 
 // HMSService 实现huawei推送，实现 PushService 接口
 type HMSService struct {
-	clients map[string]*client.HMSClient
+	clients map[string]*hClient.HMSClient
 	status  *status.StateStorage
 	logger  logr.Logger
 }
 
 func NewHMSService(cfg *config.Config, logger logr.Logger) *HMSService {
 	s := &HMSService{
-		clients: make(map[string]*client.HMSClient),
+		clients: make(map[string]*hClient.HMSClient),
 		status:  status.StatStorage,
 		logger:  logger,
 	}
@@ -59,7 +56,7 @@ func NewHMSService(cfg *config.Config, logger logr.Logger) *HMSService {
 		if v.PushUrl != "" {
 			PushUrl = v.PushUrl
 		}
-		client, err := client.NewHttpClient(&c.Config{
+		client, err := hClient.NewHttpClient(&c.Config{
 			AppId:     v.AppID,
 			AppSecret: v.AppSecret,
 			AuthUrl:   AuthUrl,
@@ -83,13 +80,6 @@ func (h *HMSService) Send(ctx context.Context, request interface{}, opt ...SendO
 	so := &SendOptions{}
 	so.ApplyOptions(opt)
 
-	var maxRetry = so.Retry
-	var es []error
-	var retryCount = 0
-	if maxRetry <= 0 {
-		maxRetry = DefaultMaxRetry // 设置一个默认的最大重试次数
-	}
-
 	if err := h.checkNotification(req); err != nil {
 		return err
 	}
@@ -103,76 +93,64 @@ func (h *HMSService) Send(ctx context.Context, request interface{}, opt ...SendO
 		return nil
 	}
 
-	for {
-		newTokens, err := h.send(ctx, req.AppID, req.Tokens, notification)
-		if err != nil {
-			log.Printf("send error => %v", err)
-			es = append(es, err)
-		}
-		// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
-		if len(newTokens) > 0 && retryCount < maxRetry {
-			retryCount++
-			req.Tokens = newTokens
-		} else {
-			break
-		}
+	send := func(ctx context.Context, token string) (*Response, error) {
+		return h.send(ctx, req.AppID, token, notification)
 	}
+	return RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
 
-	var errorMsgs []string
-	for _, err := range es {
-		errorMsgs = append(errorMsgs, err.Error())
-	}
-	if len(errorMsgs) > 0 {
-		return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
-	}
-
-	return nil
+	//for {
+	//	newTokens, err := h.send(ctx, req.AppID, req.Tokens, notification)
+	//	if err != nil {
+	//		log.Printf("send error => %v", err)
+	//		es = append(es, err)
+	//	}
+	//	// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
+	//	if len(newTokens) > 0 && retryCount < maxRetry {
+	//		retryCount++
+	//		req.Tokens = newTokens
+	//	} else {
+	//		break
+	//	}
+	//}
+	//
+	//var errorMsgs []string
+	//for _, err := range es {
+	//	errorMsgs = append(errorMsgs, err.Error())
+	//}
+	//if len(errorMsgs) > 0 {
+	//	return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
+	//}
+	//
+	//return nil
 }
 
-func (h *HMSService) send(ctx context.Context, appid string, tokens []string, notification *model.MessageRequest) ([]string, error) {
-	var newTokens []string
-	var wg sync.WaitGroup
-
+func (h *HMSService) send(ctx context.Context, appid string, token string, notification *model.MessageRequest) (*Response, error) {
 	client, ok := h.clients[appid]
 	if !ok {
 		return nil, errors.New("invalid appid or appid push is not enabled")
 	}
 
-	var es []error
+	resp := &Response{}
+	notification.Message.Token = []string{token}
+	res, err := client.SendMessage(ctx, notification)
+	if err != nil {
+		log.Printf("hcm send error: %s", err)
+		h.status.AddHuaweiFailed(1)
+		resp.Code = Fail
+		resp.Msg = res.Msg
+	} else if res != nil && res.Code != "80000000" {
+		log.Printf("honor send error: %s", res.Msg)
+		h.status.AddHonorFailed(1)
+		err = errors.New(res.Msg)
+		resp.Msg = res.Msg
+	} else {
+		log.Printf("hcm send success: %s", res)
+		h.status.AddHuaweiSuccess(1)
+		resp.Code = Success
+		resp.Msg = res.Msg
+	}
 
-	for _, token := range tokens {
-		// occupy push slot
-		MaxConcurrentHuaweiPushes <- struct{}{}
-		wg.Add(1)
-		h.status.AddHuaweiTotal(1)
-		go func(notification *model.MessageRequest, token string) {
-			defer func() {
-				// free push slot
-				<-MaxConcurrentHuaweiPushes
-				wg.Done()
-			}()
-			notification.Message.Token = []string{token}
-			res, err := client.SendMessage(ctx, notification)
-			if err != nil {
-				log.Printf("hcm send error: %s", err)
-				h.status.AddHuaweiFailed(1)
-			} else {
-				log.Printf("hcm send success: %s", res)
-				newTokens = append(newTokens, token)
-				h.status.AddHuaweiSuccess(1)
-			}
-		}(notification, token)
-	}
-	wg.Wait()
-	if len(es) > 0 {
-		var errorStrings []string
-		for _, err := range es {
-			errorStrings = append(errorStrings, err.Error())
-		}
-		allErrorsString := strings.Join(errorStrings, ", ")
-		return nil, errors.New(allErrorsString)
-	}
-	return newTokens, nil
+	return resp, err
 }
 
 func (h *HMSService) checkNotification(req *notify.HMSPushNotification) error {

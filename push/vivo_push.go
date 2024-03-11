@@ -3,7 +3,6 @@ package push
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/consts"
 	"github.com/cossim/hipush/notify"
@@ -12,7 +11,6 @@ import (
 	"github.com/go-logr/logr"
 	"log"
 	"strings"
-	"sync"
 )
 
 var (
@@ -57,100 +55,76 @@ func (v *VivoService) Send(ctx context.Context, request interface{}, opt ...Send
 	so := &SendOptions{}
 	so.ApplyOptions(opt)
 
-	var (
-		retry      = so.Retry
-		maxRetry   = retry
-		retryCount = 0
-		es         []error
-	)
-
-	if retry > 0 && retry < maxRetry {
-		maxRetry = retry
-	}
-
-	for {
-		newTokens, err := v.send(req)
-		if err != nil {
-			log.Printf("send error => %v", err)
-			es = append(es, err)
-		}
-		// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
-		fmt.Println("retryCount => ", retryCount)
-		fmt.Println("maxRetry => ", maxRetry)
-		if len(newTokens) > 0 && retryCount < maxRetry {
-			retryCount++
-			req.Tokens = newTokens
-		} else {
-			break
-		}
-	}
-
-	var errorMsgs []string
-	for _, err := range es {
-		errorMsgs = append(errorMsgs, err.Error())
-	}
-	if len(errorMsgs) > 0 {
-		return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
-	}
-	return nil
-}
-
-func (v *VivoService) send(req *notify.VivoPushNotification) ([]string, error) {
-	var newTokens []string
 	notification, err := v.buildNotification(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	var wg sync.WaitGroup
 
-	client, ok := v.clients[req.AppID]
+	if so.DryRun {
+		return nil
+	}
+
+	send := func(ctx context.Context, token string) (*Response, error) {
+		return v.send(req.AppID, token, notification)
+	}
+	return RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
+
+	//for {
+	//	newTokens, err := v.send(req)
+	//	if err != nil {
+	//		log.Printf("send error => %v", err)
+	//		es = append(es, err)
+	//	}
+	//	// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
+	//	fmt.Println("retryCount => ", retryCount)
+	//	fmt.Println("maxRetry => ", maxRetry)
+	//	if len(newTokens) > 0 && retryCount < maxRetry {
+	//		retryCount++
+	//		req.Tokens = newTokens
+	//	} else {
+	//		break
+	//	}
+	//}
+	//
+	//var errorMsgs []string
+	//for _, err := range es {
+	//	errorMsgs = append(errorMsgs, err.Error())
+	//}
+	//if len(errorMsgs) > 0 {
+	//	return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
+	//}
+	//return nil
+}
+
+func (v *VivoService) send(appid string, token string, notification *vp.Message) (*Response, error) {
+	client, ok := v.clients[appid]
 	if !ok {
 		return nil, errors.New("invalid appid or appid push is not enabled")
 	}
 
-	var es []error
+	resp := &Response{
+		Code: Fail,
+	}
+	notification.RegId = token
+	res, err := client.Send(notification, token)
+	if err != nil {
+		log.Printf("oppo send error: %s", err)
+		v.status.AddOppoFailed(1)
+		resp.Msg = err.Error()
+	} else if res != nil && res.Result != 0 {
+		log.Printf("oppo send error: %s", res.Desc)
+		v.status.AddOppoFailed(1)
+		err = errors.New(res.Desc)
+		resp.Code = res.Result
+		resp.Msg = res.Desc
+	} else {
+		log.Printf("oppo send success: %s", res.Desc)
+		v.status.AddOppoSuccess(1)
+		resp.Code = Success
+		resp.Msg = res.Desc
+	}
 
-	for _, token := range req.Tokens {
-		// occupy push slot
-		MaxConcurrentVivoPushes <- struct{}{}
-		wg.Add(1)
-		v.status.AddVivoTotal(1)
-		go func(notification *vp.Message, token string) {
-			defer func() {
-				// free push slot
-				<-MaxConcurrentVivoPushes
-				wg.Done()
-			}()
-			notification.RegId = token
-			res, err := client.Send(notification, token)
-			if err != nil || (res != nil && res.Result != 0) {
-				if err == nil {
-					err = errors.New(res.Desc)
-				} else {
-					es = append(es, err)
-				}
-				// 记录失败的 Token
-				if res != nil && res.Result != 0 {
-					newTokens = append(newTokens, token)
-				}
-				log.Printf("vivo send error: %s", err)
-				v.status.AddVivoFailed(1)
-			} else {
-				log.Printf("vivo send success: %s", res.Desc)
-				v.status.AddVivoSuccess(1)
-			}
-		}(notification, token)
-	}
-	wg.Wait()
-	if len(es) > 0 {
-		var errorStrings []string
-		for _, err := range es {
-			errorStrings = append(errorStrings, err.Error())
-		}
-		allErrorsString := strings.Join(errorStrings, ", ")
-		return nil, errors.New(allErrorsString)
-	}
-	return newTokens, nil
+	return resp, err
 }
 
 func (v *VivoService) buildNotification(req *notify.VivoPushNotification) (*vp.Message, error) {

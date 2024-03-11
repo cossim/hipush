@@ -5,7 +5,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/consts"
 	"github.com/cossim/hipush/notify"
@@ -17,7 +16,6 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 )
@@ -148,17 +146,6 @@ func (a *APNsService) Send(ctx context.Context, request interface{}, opt ...Send
 	so := &SendOptions{}
 	so.ApplyOptions(opt)
 
-	var (
-		retry      = so.Retry
-		maxRetry   = so.Retry
-		retryCount = 0
-		es         []error
-	)
-
-	if retry > 0 && retry < maxRetry {
-		maxRetry = retry
-	}
-
 	if err := a.checkNotification(req); err != nil {
 		return err
 	}
@@ -172,29 +159,10 @@ func (a *APNsService) Send(ctx context.Context, request interface{}, opt ...Send
 		return nil
 	}
 
-	for {
-		newTokens, err := a.send(req.AppID, req.Tokens, notification)
-		if err != nil {
-			log.Printf("send error => %v", err)
-			es = append(es, err)
-		}
-		// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
-		if len(newTokens) > 0 && retryCount < maxRetry {
-			retryCount++
-			req.Tokens = newTokens
-		} else {
-			break
-		}
+	send := func(ctx context.Context, token string) (*Response, error) {
+		return a.send(req.AppID, token, notification)
 	}
-
-	var errorMsgs []string
-	for _, err := range es {
-		errorMsgs = append(errorMsgs, err.Error())
-	}
-	if len(errorMsgs) > 0 {
-		return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
-	}
-	return nil
+	return RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
 }
 
 func (a *APNsService) MapPushRequestToApnsPushNotification(req PushRequest) (*notify.ApnsPushNotification, error) {
@@ -290,58 +258,31 @@ func (a *APNsService) buildNotification(req *notify.ApnsPushNotification) (*apns
 	return notify.GetIOSNotification(req), nil
 }
 
-func (a *APNsService) send(appid string, tokens []string, notification *apns2.Notification) ([]string, error) {
-	var newTokens []string
-	var wg sync.WaitGroup
-
+func (a *APNsService) send(appid string, token string, notification *apns2.Notification) (*Response, error) {
 	if _, ok := a.clients[appid]; !ok {
 		return nil, errors.New("invalid appid or appid push is not enabled")
 	}
-
-	var es []error
-
-	for _, token := range tokens {
-		// occupy push slot
-		MaxConcurrentIOSPushes <- struct{}{}
-		wg.Add(1)
-		a.status.AddIosTotal(1)
-		go func(notification *apns2.Notification, token string) {
-			defer func() {
-				// free push slot
-				<-MaxConcurrentIOSPushes
-				wg.Done()
-			}()
-
-			notification.DeviceToken = token
-			res, err := a.clients[appid].Push(notification)
-			if err != nil || (res != nil && res.StatusCode != http.StatusOK) {
-				if err == nil {
-					err = errors.New(res.Reason)
-				} else {
-					es = append(es, err)
-				}
-				// 记录失败的 Token
-				if res != nil && res.StatusCode >= http.StatusInternalServerError {
-					newTokens = append(newTokens, token)
-				}
-				log.Printf("apns send error: %s", err)
-				a.status.AddIosFailed(1)
-			} else {
-				log.Printf("apns send success: %s", res.Reason)
-				a.status.AddIosSuccess(1)
-			}
-		}(notification, token)
+	resp := &Response{Code: Fail}
+	a.status.AddIosTotal(1)
+	notification.DeviceToken = token
+	res, err := a.clients[appid].Push(notification)
+	if err != nil {
+		log.Printf("apns send error: %s", err)
+		a.status.AddIosFailed(1)
+		resp.Msg = err.Error()
+	} else if res != nil && res.StatusCode != http.StatusOK {
+		log.Printf("apns send error: %s", res.Reason)
+		a.status.AddIosFailed(1)
+		err = errors.New(res.Reason)
+		resp.Msg = res.Reason
+	} else {
+		log.Printf("apns send success: %s", res.Reason)
+		a.status.AddIosSuccess(1)
+		resp.Code = Success
+		resp.Msg = res.Reason
 	}
-	wg.Wait()
-	if len(es) > 0 {
-		var errorStrings []string
-		for _, err := range es {
-			errorStrings = append(errorStrings, err.Error())
-		}
-		allErrorsString := strings.Join(errorStrings, ", ")
-		return nil, errors.New(allErrorsString)
-	}
-	return newTokens, nil
+
+	return resp, err
 }
 
 func (a *APNsService) checkNotification(req *notify.ApnsPushNotification) error {

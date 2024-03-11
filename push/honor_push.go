@@ -3,7 +3,6 @@ package push
 import (
 	"context"
 	"errors"
-	"fmt"
 	hClient "github.com/cossim/hipush/client/push"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/consts"
@@ -11,8 +10,7 @@ import (
 	"github.com/cossim/hipush/status"
 	"github.com/go-logr/logr"
 	"log"
-	"strings"
-	"sync"
+	"net/http"
 )
 
 var (
@@ -56,10 +54,6 @@ func (h *HonorService) Send(ctx context.Context, request interface{}, opt ...Sen
 	so := &SendOptions{}
 	so.ApplyOptions(opt)
 
-	var maxRetry = so.Retry
-	var retryCount int
-	var es []error
-
 	if err := h.checkNotification(req); err != nil {
 		return err
 	}
@@ -70,86 +64,114 @@ func (h *HonorService) Send(ctx context.Context, request interface{}, opt ...Sen
 		return nil
 	}
 
-	for {
-		newTokens, err := h.send(ctx, req.AppID, req.Tokens, notification)
-		if err != nil {
-			log.Printf("send error => %v", err)
-			es = append(es, err)
-		}
-		// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
-		if len(newTokens) > 0 && retryCount < maxRetry {
-			retryCount++
-			req.Tokens = newTokens
-		} else {
-			break
-		}
+	send := func(ctx context.Context, token string) (*Response, error) {
+		return h.send(ctx, req.AppID, token, notification)
 	}
+	return RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
 
-	var errorMsgs []string
-	for _, err := range es {
-		errorMsgs = append(errorMsgs, err.Error())
-	}
-	if len(errorMsgs) > 0 {
-		return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
-	}
-	return nil
+	//for {
+	//	newTokens, err := h.send(ctx, req.AppID, req.Tokens, notification)
+	//	if err != nil {
+	//		log.Printf("send error => %v", err)
+	//		es = append(es, err)
+	//	}
+	//	// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
+	//	if len(newTokens) > 0 && retryCount < maxRetry {
+	//		retryCount++
+	//		req.Tokens = newTokens
+	//	} else {
+	//		break
+	//	}
+	//}
+	//
+	//var errorMsgs []string
+	//for _, err := range es {
+	//	errorMsgs = append(errorMsgs, err.Error())
+	//}
+	//if len(errorMsgs) > 0 {
+	//	return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
+	//}
+	//return nil
 }
 
-func (h *HonorService) send(ctx context.Context, appid string, tokens []string, notification *hClient.SendMessageRequest) ([]string, error) {
-	var newTokens []string
-	var wg sync.WaitGroup
-
+func (h *HonorService) send(ctx context.Context, appid string, token string, notification *hClient.SendMessageRequest) (*Response, error) {
 	client, ok := h.clients[appid]
 	if !ok {
 		return nil, errors.New("invalid appid or appid push is not enabled")
 	}
 
-	var es []error
-
-	for _, token := range tokens {
-		// occupy push slot
-		MaxConcurrentHuaweiPushes <- struct{}{}
-		wg.Add(1)
-		h.status.AddHonorTotal(1)
-		go func(notification *hClient.SendMessageRequest, token string) {
-			defer func() {
-				// free push slot
-				<-MaxConcurrentHuaweiPushes
-				wg.Done()
-			}()
-			res, err := client.SendMessage(ctx, appid, notification)
-			if err != nil || (res != nil && res.Code != 200) {
-				if err == nil {
-					err = errors.New(res.Message)
-				} else {
-					es = append(es, err)
-				}
-				// 记录失败的 Token
-				if res != nil && res.Code != 200 {
-					newTokens = append(newTokens, res.Data.FailTokens...)
-				}
-				if len(res.Data.ExpireTokens) > 0 {
-					log.Printf("honor send expire tokens: %s", res.Data.ExpireTokens)
-				}
-				log.Printf("honor send error: %s", err)
-				h.status.AddHonorFailed(1)
-
-			} else {
-				log.Printf("honor send success: %s", res.Message)
-				h.status.AddHonorSuccess(1)
-			}
-		}(notification, token)
-	}
-	wg.Wait()
-	if len(es) > 0 {
-		var errorStrings []string
-		for _, err := range es {
-			errorStrings = append(errorStrings, err.Error())
+	resp := &Response{}
+	notification.Token = []string{token}
+	res, err := client.SendMessage(ctx, appid, notification)
+	if err != nil {
+		log.Printf("honor send error: %s", err)
+		h.status.AddHonorFailed(1)
+		resp.Msg = err.Error()
+	} else if res != nil && res.Code != http.StatusOK {
+		if len(res.Data.ExpireTokens) > 0 {
+			log.Printf("honor send expire tokens: %s", res.Data.ExpireTokens)
 		}
-		allErrorsString := strings.Join(errorStrings, ", ")
-		return nil, errors.New(allErrorsString)
+		log.Printf("honor send error: %s", res.Message)
+		h.status.AddHonorFailed(1)
+		err = errors.New(res.Message)
+		resp.Code = res.Code
+		resp.Msg = res.Message
+	} else {
+		log.Printf("honor send success: %s", res.Message)
+		h.status.AddHonorSuccess(1)
+		resp.Code = Success
+		resp.Msg = res.Message
+		resp.Data = res.Data
 	}
-	return newTokens, nil
+
+	return resp, nil
+
+	//var es []error
+	//
+	//for _, token := range tokens {
+	//	// occupy push slot
+	//	MaxConcurrentHuaweiPushes <- struct{}{}
+	//	wg.Add(1)
+	//	h.status.AddHonorTotal(1)
+	//	go func(notification *hClient.SendMessageRequest, token string) {
+	//		defer func() {
+	//			// free push slot
+	//			<-MaxConcurrentHuaweiPushes
+	//			wg.Done()
+	//		}()
+	//		res, err := client.SendMessage(ctx, appid, notification)
+	//		if err != nil || (res != nil && res.Code != 200) {
+	//			if err == nil {
+	//				err = errors.New(res.Message)
+	//			} else {
+	//				es = append(es, err)
+	//			}
+	//			// 记录失败的 Token
+	//			if res != nil && res.Code != 200 {
+	//				newTokens = append(newTokens, res.Data.FailTokens...)
+	//			}
+	//			if len(res.Data.ExpireTokens) > 0 {
+	//				log.Printf("honor send expire tokens: %s", res.Data.ExpireTokens)
+	//			}
+	//			log.Printf("honor send error: %s", err)
+	//			h.status.AddHonorFailed(1)
+	//
+	//		} else {
+	//			log.Printf("honor send success: %s", res.Message)
+	//			h.status.AddHonorSuccess(1)
+	//		}
+	//	}(notification, token)
+	//}
+	//wg.Wait()
+	//if len(es) > 0 {
+	//	var errorStrings []string
+	//	for _, err := range es {
+	//		errorStrings = append(errorStrings, err.Error())
+	//	}
+	//	allErrorsString := strings.Join(errorStrings, ", ")
+	//	return nil, errors.New(allErrorsString)
+	//}
+	//return newTokens, nil
 }
 
 func (h *HonorService) checkNotification(req *notify.HonorPushNotification) error {

@@ -192,43 +192,43 @@ func (s *StateStorage) AddHonorFailed(count int64) {
 func (s *StateStorage) GetTotalCount() int64 {
 	//return s.store.Get(consts.HiPushTotal)
 	var count int64
-	//count += s.GetAndroidTotal()
-	//count += s.GetIosTotal()
-	//count += s.GetHuaweiTotal()
-	//count += s.GetXiaomiTotal()
-	//count += s.GetVivoTotal()
-	//count += s.GetOppoTotal()
-	//count += s.GetMeizuTotal()
-	//count += s.GetHonorTotal()
-	count = s.GetHttpTotal() + s.GetGrpcTotal()
+	count += s.GetAndroidTotal()
+	count += s.GetIosTotal()
+	count += s.GetHuaweiTotal()
+	count += s.GetXiaomiTotal()
+	count += s.GetVivoTotal()
+	count += s.GetOppoTotal()
+	count += s.GetMeizuTotal()
+	count += s.GetHonorTotal()
+	//count = s.GetHttpTotal() + s.GetGrpcTotal()
 	return count
 }
 
 func (s *StateStorage) GetSuccessCount() int64 {
 	var count int64
-	//count += s.GetAndroidSuccess()
-	//count += s.GetIosSuccess()
-	//count += s.GetHuaweiSuccess()
-	//count += s.GetXiaomiSuccess()
-	//count += s.GetVivoSuccess()
-	//count += s.GetOppoSuccess()
-	//count += s.GetMeizuSuccess()
-	//count += s.GetHonorSuccess()
-	count = s.GetHttpSuccess() + s.GetGrpcSuccess()
+	count += s.GetAndroidSuccess()
+	count += s.GetIosSuccess()
+	count += s.GetHuaweiSuccess()
+	count += s.GetXiaomiSuccess()
+	count += s.GetVivoSuccess()
+	count += s.GetOppoSuccess()
+	count += s.GetMeizuSuccess()
+	count += s.GetHonorSuccess()
+	//count = s.GetHttpSuccess() + s.GetGrpcSuccess()
 	return count
 }
 
 func (s *StateStorage) GetFailedCount() int64 {
 	var count int64
-	//count += s.GetAndroidFailed()
-	//count += s.GetIosFailed()
-	//count += s.GetHuaweiFailed()
-	//count += s.GetXiaomiFailed()
-	//count += s.GetVivoFailed()
-	//count += s.GetOppoFailed()
-	//count += s.GetMeizuFailed()
-	//count += s.GetHonorFailed()
-	count = s.GetHttpFailed() + s.GetGrpcFailed()
+	count += s.GetAndroidFailed()
+	count += s.GetIosFailed()
+	count += s.GetHuaweiFailed()
+	count += s.GetXiaomiFailed()
+	count += s.GetVivoFailed()
+	count += s.GetOppoFailed()
+	count += s.GetMeizuFailed()
+	count += s.GetHonorFailed()
+	//count = s.GetHttpFailed() + s.GetGrpcFailed()
 	return count
 }
 

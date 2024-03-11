@@ -3,7 +3,6 @@ package push
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/consts"
 	"github.com/cossim/hipush/notify"
@@ -11,8 +10,6 @@ import (
 	"github.com/go-logr/logr"
 	xp "github.com/yilee/xiaomi-push"
 	"log"
-	"strings"
-	"sync"
 )
 
 var (
@@ -53,13 +50,6 @@ func (x *XiaomiPushService) Send(ctx context.Context, request interface{}, opt .
 	so := &SendOptions{}
 	so.ApplyOptions(opt)
 
-	var (
-		retry      = so.Retry
-		maxRetry   = retry
-		retryCount = 0
-		es         []error
-	)
-
 	if err := x.checkNotification(req); err != nil {
 		return err
 	}
@@ -73,33 +63,38 @@ func (x *XiaomiPushService) Send(ctx context.Context, request interface{}, opt .
 		return nil
 	}
 
-	for {
-		newTokens, err := x.send(ctx, req.AppID, req.Tokens, notification)
-		if err != nil {
-			log.Printf("send error => %v", err)
-			es = append(es, err)
-		}
-		// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
-		if len(newTokens) > 0 && retryCount < maxRetry {
-			retryCount++
-			req.Tokens = newTokens
-		} else {
-			break
-		}
+	send := func(ctx context.Context, token string) (*Response, error) {
+		return x.send(ctx, req.AppID, token, notification)
 	}
+	return RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
 
-	fmt.Println("total count => ", x.status.GetXiaomiTotal())
-	fmt.Println("success count => ", x.status.GetXiaomiSuccess())
-	fmt.Println("failed count => ", x.status.GetXiaomiFailed())
-
-	var errorMsgs []string
-	for _, err := range es {
-		errorMsgs = append(errorMsgs, err.Error())
-	}
-	if len(errorMsgs) > 0 {
-		return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
-	}
-	return nil
+	//for {
+	//	newTokens, err := x.send(ctx, req.AppID, req.Tokens, notification)
+	//	if err != nil {
+	//		log.Printf("send error => %v", err)
+	//		es = append(es, err)
+	//	}
+	//	// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
+	//	if len(newTokens) > 0 && retryCount < maxRetry {
+	//		retryCount++
+	//		req.Tokens = newTokens
+	//	} else {
+	//		break
+	//	}
+	//}
+	//
+	//fmt.Println("total count => ", x.status.GetXiaomiTotal())
+	//fmt.Println("success count => ", x.status.GetXiaomiSuccess())
+	//fmt.Println("failed count => ", x.status.GetXiaomiFailed())
+	//
+	//var errorMsgs []string
+	//for _, err := range es {
+	//	errorMsgs = append(errorMsgs, err.Error())
+	//}
+	//if len(errorMsgs) > 0 {
+	//	return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
+	//}
+	//return nil
 }
 
 func (x *XiaomiPushService) checkNotification(req *notify.XiaomiPushNotification) error {
@@ -140,58 +135,32 @@ func (x *XiaomiPushService) buildNotification(req *notify.XiaomiPushNotification
 	return msg, nil
 }
 
-func (x *XiaomiPushService) send(ctx context.Context, appID string, tokens []string, message *xp.Message) ([]string, error) {
-	var newTokens []string
-	var wg sync.WaitGroup
+func (x *XiaomiPushService) send(ctx context.Context, appID string, token string, message *xp.Message) (*Response, error) {
 	client, ok := x.clients[appID]
 	if !ok {
 		return nil, errors.New("invalid appid or appid push is not enabled")
 	}
 
-	var es []error
-
-	for _, token := range tokens {
-		// occupy push slot
-		MaxConcurrentMeizuPushes <- struct{}{}
-		wg.Add(1)
-		x.status.AddXiaomiTotal(1)
-		go func(notification *xp.Message, token string) {
-			defer func() {
-				// free push slot
-				<-MaxConcurrentMeizuPushes
-				wg.Done()
-			}()
-
-			fmt.Println("notification => ", notification)
-			res, err := client.Send(ctx, notification, token)
-			if err != nil || (res != nil && res.Code != 0) {
-				if err == nil {
-					err = errors.New(res.Reason)
-				} else {
-					es = append(es, err)
-				}
-				// 记录失败的 Token
-				if res != nil && res.Code != 0 {
-					newTokens = append(newTokens, token)
-				}
-				log.Printf("xiaomi send error: %s", err)
-				x.status.AddXiaomiFailed(1)
-			} else {
-				log.Printf("xiaomi send success: %s", res.Reason)
-				x.status.AddXiaomiSuccess(1)
-			}
-		}(message, token)
+	resp := &Response{}
+	res, err := client.Send(ctx, message, token)
+	if err != nil {
+		log.Printf("xiaomi send error: %s", err)
+		x.status.AddOppoFailed(1)
+		resp.Msg = err.Error()
+	} else if res != nil && res.Code != 0 {
+		log.Printf("xiaomi send error: %s", res.Reason)
+		x.status.AddOppoFailed(1)
+		err = errors.New(res.Reason)
+		resp.Code = int(res.Code)
+		resp.Msg = res.Reason
+	} else {
+		log.Printf("xiaomi send success: %s", res.Reason)
+		x.status.AddOppoSuccess(1)
+		resp.Code = Success
+		resp.Msg = res.Reason
 	}
-	wg.Wait()
-	if len(es) > 0 {
-		var errorStrings []string
-		for _, err := range es {
-			errorStrings = append(errorStrings, err.Error())
-		}
-		allErrorsString := strings.Join(errorStrings, ", ")
-		return nil, errors.New(allErrorsString)
-	}
-	return newTokens, nil
+
+	return resp, err
 }
 
 func (x *XiaomiPushService) Name() string {
