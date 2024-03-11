@@ -17,13 +17,9 @@ func NewPushServiceFactory() *PushServiceFactory {
 	}
 }
 
-func WithPushServiceCreator(creator func() (push.PushService, error)) PushServiceCreator {
+func (f *PushServiceFactory) WithPushService(ps push.PushService, err error) PushServiceCreator {
 	return func() (push.PushService, error) {
-		ps, err := creator()
-		if err != nil {
-			return nil, err
-		}
-		return ps, nil
+		return ps, err
 	}
 }
 
