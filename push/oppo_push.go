@@ -99,6 +99,8 @@ func (o *OppoService) send(appID string, token string, notification *op.Message)
 		return nil, errors.New("invalid appid or appid push is not enabled")
 	}
 
+	o.status.AddOppoTotal(1)
+
 	resp := &Response{Code: Fail}
 	notification.SetTargetValue(token)
 	res, err := client.Unicast(notification)

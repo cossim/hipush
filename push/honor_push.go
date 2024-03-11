@@ -100,7 +100,9 @@ func (h *HonorService) send(ctx context.Context, appid string, token string, not
 		return nil, errors.New("invalid appid or appid push is not enabled")
 	}
 
-	resp := &Response{}
+	h.status.AddHonorTotal(1)
+
+	resp := &Response{Code: Fail}
 	notification.Token = []string{token}
 	res, err := client.SendMessage(ctx, appid, notification)
 	if err != nil {
@@ -124,7 +126,7 @@ func (h *HonorService) send(ctx context.Context, appid string, token string, not
 		resp.Data = res.Data
 	}
 
-	return resp, nil
+	return resp, err
 
 	//var es []error
 	//

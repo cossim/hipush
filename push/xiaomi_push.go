@@ -141,21 +141,23 @@ func (x *XiaomiPushService) send(ctx context.Context, appID string, token string
 		return nil, errors.New("invalid appid or appid push is not enabled")
 	}
 
-	resp := &Response{}
+	x.status.AddXiaomiTotal(1)
+
+	resp := &Response{Code: Fail}
 	res, err := client.Send(ctx, message, token)
 	if err != nil {
 		log.Printf("xiaomi send error: %s", err)
-		x.status.AddOppoFailed(1)
+		x.status.AddXiaomiFailed(1)
 		resp.Msg = err.Error()
 	} else if res != nil && res.Code != 0 {
 		log.Printf("xiaomi send error: %s", res.Reason)
-		x.status.AddOppoFailed(1)
+		x.status.AddXiaomiFailed(1)
 		err = errors.New(res.Reason)
 		resp.Code = int(res.Code)
 		resp.Msg = res.Reason
 	} else {
 		log.Printf("xiaomi send success: %s", res.Reason)
-		x.status.AddOppoSuccess(1)
+		x.status.AddXiaomiSuccess(1)
 		resp.Code = Success
 		resp.Msg = res.Reason
 	}

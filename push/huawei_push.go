@@ -130,21 +130,23 @@ func (h *HMSService) send(ctx context.Context, appid string, token string, notif
 		return nil, errors.New("invalid appid or appid push is not enabled")
 	}
 
+	h.status.AddHuaweiTotal(1)
+
 	resp := &Response{}
 	notification.Message.Token = []string{token}
 	res, err := client.SendMessage(ctx, notification)
 	if err != nil {
-		log.Printf("hcm send error: %s", err)
+		log.Printf("huawei send error: %s", err)
 		h.status.AddHuaweiFailed(1)
 		resp.Code = Fail
 		resp.Msg = res.Msg
 	} else if res != nil && res.Code != "80000000" {
-		log.Printf("honor send error: %s", res.Msg)
+		log.Printf("huawei send error: %s", res.Msg)
 		h.status.AddHonorFailed(1)
 		err = errors.New(res.Msg)
 		resp.Msg = res.Msg
 	} else {
-		log.Printf("hcm send success: %s", res)
+		log.Printf("huawei send success: %s", res)
 		h.status.AddHuaweiSuccess(1)
 		resp.Code = Success
 		resp.Msg = res.Msg

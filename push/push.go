@@ -117,10 +117,10 @@ const (
 
 type SendFunc func(ctx context.Context, token string) (*Response, error)
 
-func RetrySend(ctx context.Context, send SendFunc, tokens []string, retry int, retryInterval time.Duration, maxConcurrent int) error {
+func RetrySend(ctx context.Context, send SendFunc, tokens []string, retry int, retryInterval int, maxConcurrent int) error {
 	var wg sync.WaitGroup
 	if retryInterval <= 0 {
-		retryInterval = time.Second
+		retryInterval = 1
 	}
 	if maxConcurrent <= 0 {
 		maxConcurrent = 100
@@ -146,8 +146,11 @@ func RetrySend(ctx context.Context, send SendFunc, tokens []string, retry int, r
 					} else {
 						es = append(es, err)
 					}
-					log.Printf("send error: %s (attempt %d)", err, i+1)
-					time.Sleep(retryInterval)
+					if i == 0 {
+						continue
+					}
+					log.Printf("send error: %s (attempt %d)", err, i)
+					time.Sleep(time.Duration(retryInterval) * time.Second)
 				} else {
 					log.Printf("send success: %s", res.Msg)
 					break
@@ -157,12 +160,17 @@ func RetrySend(ctx context.Context, send SendFunc, tokens []string, retry int, r
 	}
 	wg.Wait()
 	if len(es) > 0 {
-		var errorStrings []string
+		uniqueErrors := make(map[string]struct{})
 		for _, err := range es {
-			errorStrings = append(errorStrings, err.Error())
+			uniqueErrors[err.Error()] = struct{}{}
 		}
-		allErrorsString := strings.Join(errorStrings, ", ")
+		var uniqueErrorStrings []string
+		for err := range uniqueErrors {
+			uniqueErrorStrings = append(uniqueErrorStrings, err)
+		}
+		allErrorsString := strings.Join(uniqueErrorStrings, ", ")
 		return errors.New(allErrorsString)
 	}
+
 	return nil
 }

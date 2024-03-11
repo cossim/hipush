@@ -1,7 +1,5 @@
 package dto
 
-import "time"
-
 // PushRequest 表示推送请求的结构体
 type PushRequest struct {
 	// AppID 应用程序标识
@@ -31,8 +29,8 @@ type PushOption struct {
 	// Retry 重试次数
 	Retry int `json:"retry,omitempty"`
 
-	// RetryInterval 重试间隔
-	RetryInterval time.Duration `json:"retry_interval"`
+	// RetryInterval 重试间隔（以秒为单位）
+	RetryInterval int `json:"retry_interval,omitempty"`
 }
 
 type PushStatRequest struct {

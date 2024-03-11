@@ -133,6 +133,8 @@ func (f *FCMService) send(ctx context.Context, appid string, token string, notif
 
 	resp := &Response{Code: Fail}
 
+	f.status.AddAndroidTotal(1)
+
 	notification.Token = token
 	res, err := client.Send(ctx, notification)
 	if err != nil {
@@ -150,7 +152,7 @@ func (f *FCMService) send(ctx context.Context, appid string, token string, notif
 		resp.Msg = res
 	}
 
-	return resp, nil
+	return resp, err
 }
 
 // checkNotification for check request message

@@ -2,7 +2,6 @@ package store
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -138,7 +137,6 @@ func (fs *FileStore) saveToFile() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("periodic save data to file data => ", string(data))
 
 	dir := filepath.Dir(fs.path)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {

@@ -102,24 +102,24 @@ func (v *VivoService) send(appid string, token string, notification *vp.Message)
 		return nil, errors.New("invalid appid or appid push is not enabled")
 	}
 
-	resp := &Response{
-		Code: Fail,
-	}
+	v.status.AddVivoTotal(1)
+
+	resp := &Response{Code: Fail}
 	notification.RegId = token
 	res, err := client.Send(notification, token)
 	if err != nil {
-		log.Printf("oppo send error: %s", err)
-		v.status.AddOppoFailed(1)
+		log.Printf("vivo send error: %s", err)
+		v.status.AddVivoFailed(1)
 		resp.Msg = err.Error()
 	} else if res != nil && res.Result != 0 {
-		log.Printf("oppo send error: %s", res.Desc)
-		v.status.AddOppoFailed(1)
+		log.Printf("vivo send error: %s", res.Desc)
+		v.status.AddVivoFailed(1)
 		err = errors.New(res.Desc)
 		resp.Code = res.Result
 		resp.Msg = res.Desc
 	} else {
-		log.Printf("oppo send success: %s", res.Desc)
-		v.status.AddOppoSuccess(1)
+		log.Printf("vivo send success: %s", res.Desc)
+		v.status.AddVivoSuccess(1)
 		resp.Code = Success
 		resp.Msg = res.Desc
 	}

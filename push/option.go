@@ -1,7 +1,5 @@
 package push
 
-import "time"
-
 type SendOption interface {
 	Apply(option *SendOptions)
 }
@@ -12,8 +10,8 @@ type SendOptions struct {
 	DryRun bool `json:"dry_run,omitempty"`
 	// Retry 重试次数
 	Retry int `json:"retry,omitempty"`
-	// RetryInterval 重试间隔
-	RetryInterval time.Duration `json:"retry_interval"`
+	// RetryInterval 重试间隔（以秒为单位）
+	RetryInterval int `json:"retry_interval"`
 }
 
 func (s *SendOptions) Apply(option *SendOptions) {

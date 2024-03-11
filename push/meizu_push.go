@@ -103,6 +103,8 @@ func (m *MeizuService) send(appid string, token string, message string) (*Respon
 		return nil, errors.New("invalid appid or appid push is not enabled")
 	}
 
+	m.status.AddMeizuTotal(1)
+
 	var err error
 	resp := &Response{}
 	res := pushFunc(token, message)
