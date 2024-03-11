@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"github.com/cossim/hipush/config"
-	"github.com/cossim/hipush/factory"
+	"github.com/cossim/hipush/internal/factory"
 	g "github.com/cossim/hipush/internal/server/grpc"
 	h "github.com/cossim/hipush/internal/server/http"
 	"github.com/cossim/hipush/push"

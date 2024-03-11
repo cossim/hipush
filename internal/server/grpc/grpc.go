@@ -8,7 +8,7 @@ import (
 	"github.com/cossim/hipush/api/grpc/v1"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/consts"
-	"github.com/cossim/hipush/factory"
+	"github.com/cossim/hipush/internal/factory"
 	"github.com/cossim/hipush/notify"
 	"github.com/cossim/hipush/push"
 	"github.com/cossim/hipush/status"

@@ -7,7 +7,7 @@ import (
 	"github.com/cossim/hipush/api/http/v1/dto"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/consts"
-	"github.com/cossim/hipush/factory"
+	"github.com/cossim/hipush/internal/factory"
 	"github.com/cossim/hipush/status"
 	"github.com/gin-gonic/gin"
 	"github.com/go-logr/logr"
