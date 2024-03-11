@@ -53,7 +53,11 @@ func (h *Handler) handleHuaweiPush(c *gin.Context, req *dto.PushRequest) error {
 			},
 		},
 	}
-	if err := service.Send(c, rr, &push.SendOptions{}); err != nil {
+	if err := service.Send(c, rr, &push.SendOptions{
+		DryRun:        req.Option.DryRun,
+		Retry:         req.Option.Retry,
+		RetryInterval: req.Option.RetryInterval,
+	}); err != nil {
 		c.JSON(http.StatusInternalServerError, Response{Code: http.StatusBadRequest, Msg: err.Error(), Data: nil})
 		return err
 	}

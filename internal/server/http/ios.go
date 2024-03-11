@@ -51,7 +51,9 @@ func (h *Handler) handleIOSPush(c *gin.Context, req *dto.PushRequest) error {
 		Expiration:       nil,
 	}
 	if err := service.Send(c, rr, &push.SendOptions{
-		Retry: 5,
+		DryRun:        req.Option.DryRun,
+		Retry:         req.Option.Retry,
+		RetryInterval: req.Option.RetryInterval,
 	}); err != nil {
 		h.logger.Error(err, "Failed to send push notification")
 		c.JSON(http.StatusInternalServerError, Response{Code: http.StatusBadRequest, Msg: err.Error(), Data: nil})

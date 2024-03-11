@@ -50,7 +50,11 @@ func (h *Handler) handleHonorPush(c *gin.Context, req *dto.PushRequest) {
 			//Parameters: r.ClickAction.Parameters,
 		},
 	}
-	if err := service.Send(c, rr, &push.SendOptions{}); err != nil {
+	if err := service.Send(c, rr, &push.SendOptions{
+		DryRun:        req.Option.DryRun,
+		Retry:         req.Option.Retry,
+		RetryInterval: req.Option.RetryInterval,
+	}); err != nil {
 		c.JSON(http.StatusInternalServerError, Response{Code: http.StatusBadRequest, Msg: err.Error(), Data: nil})
 		return
 	}

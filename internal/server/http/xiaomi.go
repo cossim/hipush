@@ -44,8 +44,9 @@ func (h *Handler) handleXiaomiPush(c *gin.Context, req *dto.PushRequest) error {
 		ScheduledTime: r.ScheduledTime,
 	}
 	if err := service.Send(c, rr, &push.SendOptions{
-		DryRun: false,
-		Retry:  0,
+		DryRun:        req.Option.DryRun,
+		Retry:         req.Option.Retry,
+		RetryInterval: req.Option.RetryInterval,
 	}); err != nil {
 		c.JSON(http.StatusInternalServerError, Response{Code: http.StatusBadRequest, Msg: err.Error(), Data: nil})
 		return err
