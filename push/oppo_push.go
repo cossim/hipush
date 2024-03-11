@@ -26,7 +26,7 @@ type OppoService struct {
 	logger  logr.Logger
 }
 
-func NewOppoService(cfg *config.Config, logger logr.Logger) (*OppoService, error) {
+func NewOppoService(cfg *config.Config, logger logr.Logger) *OppoService {
 	s := &OppoService{
 		clients: map[string]*op.OppoPush{},
 		status:  status.StatStorage,
@@ -35,13 +35,13 @@ func NewOppoService(cfg *config.Config, logger logr.Logger) (*OppoService, error
 
 	for _, v := range cfg.Oppo {
 		if !v.Enabled || v.Enabled && (v.AppID == "" || v.AppKey == "" || v.AppSecret == "") {
-			return nil, errors.New("push not enabled or misconfigured")
+			panic("push not enabled or misconfigured")
 		}
 		client := op.NewClient(v.AppKey, v.AppSecret)
 		s.clients[v.AppID] = client
 	}
 
-	return s, nil
+	return s
 }
 
 func (o *OppoService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {

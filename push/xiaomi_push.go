@@ -26,7 +26,7 @@ type XiaomiPushService struct {
 	logger  logr.Logger
 }
 
-func NewXiaomiService(cfg *config.Config, logger logr.Logger) (*XiaomiPushService, error) {
+func NewXiaomiService(cfg *config.Config, logger logr.Logger) *XiaomiPushService {
 	s := &XiaomiPushService{
 		clients: map[string]*xp.MiPush{},
 		status:  status.StatStorage,
@@ -35,13 +35,13 @@ func NewXiaomiService(cfg *config.Config, logger logr.Logger) (*XiaomiPushServic
 
 	for _, v := range cfg.Xiaomi {
 		if !v.Enabled || v.Enabled && v.AppSecret == "" {
-			return nil, errors.New("push not enabled or misconfigured")
+			panic("push not enabled or misconfigured")
 		}
 		client := xp.NewClient(v.AppSecret, v.Package)
 		s.clients[v.AppID] = client
 	}
 
-	return s, nil
+	return s
 }
 
 func (x *XiaomiPushService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {

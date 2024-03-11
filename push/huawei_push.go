@@ -40,7 +40,7 @@ type HMSService struct {
 	logger  logr.Logger
 }
 
-func NewHMSService(cfg *config.Config, logger logr.Logger) (*HMSService, error) {
+func NewHMSService(cfg *config.Config, logger logr.Logger) *HMSService {
 	s := &HMSService{
 		clients: make(map[string]*client.HMSClient),
 		status:  status.StatStorage,
@@ -66,12 +66,12 @@ func NewHMSService(cfg *config.Config, logger logr.Logger) (*HMSService, error) 
 			PushUrl:   PushUrl,
 		})
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 		s.clients[v.AppID] = client
 	}
 
-	return s, nil
+	return s
 }
 
 func (h *HMSService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {

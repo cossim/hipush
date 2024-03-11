@@ -27,7 +27,7 @@ type VivoService struct {
 	logger  logr.Logger
 }
 
-func NewVivoService(cfg *config.Config, logger logr.Logger) (*VivoService, error) {
+func NewVivoService(cfg *config.Config, logger logr.Logger) *VivoService {
 	s := &VivoService{
 		clients: map[string]*vp.VivoPush{},
 		status:  status.StatStorage,
@@ -36,16 +36,16 @@ func NewVivoService(cfg *config.Config, logger logr.Logger) (*VivoService, error
 
 	for _, v := range cfg.Vivo {
 		if !v.Enabled || v.Enabled && (v.AppID == "" || v.AppKey == "" || v.AppSecret == "") {
-			return nil, errors.New("push not enabled or misconfigured")
+			panic("push not enabled or misconfigured")
 		}
 		client, err := vp.NewClient(v.AppID, v.AppKey, v.AppSecret)
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 		s.clients[v.AppID] = client
 	}
 
-	return s, nil
+	return s
 }
 
 func (v *VivoService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {

@@ -46,7 +46,7 @@ type APNsService struct {
 	logger  logr.Logger
 }
 
-func NewAPNsService(cfg *config.Config, logger logr.Logger) (*APNsService, error) {
+func NewAPNsService(cfg *config.Config, logger logr.Logger) *APNsService {
 	var ext string
 	var err error
 	var authKey *ecdsa.PrivateKey
@@ -81,14 +81,14 @@ func NewAPNsService(cfg *config.Config, logger logr.Logger) (*APNsService, error
 				}
 				client, err := s.newApnsTokenClient(v.Production, token)
 				if err != nil {
-					return nil, err
+					panic(err)
 				}
 				s.clients[v.AppID] = client
 			default:
 				err = errors.New("wrong certificate key extension")
 			}
 			if err != nil {
-				return nil, err
+				panic(err)
 			}
 		}
 	}
@@ -97,7 +97,7 @@ func NewAPNsService(cfg *config.Config, logger logr.Logger) (*APNsService, error
 		MaxConcurrentIOSPushes = make(chan struct{}, 100)
 	})
 
-	return s, nil
+	return s
 }
 
 func (a *APNsService) newApnsTokenClient(production bool, token *token.Token) (*apns2.Client, error) {

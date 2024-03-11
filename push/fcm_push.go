@@ -47,7 +47,7 @@ type FCMService struct {
 //	return s, nil
 //}
 
-func NewFCMService(cfg *config.Config, logger logr.Logger) (*FCMService, error) {
+func NewFCMService(cfg *config.Config, logger logr.Logger) *FCMService {
 	s := &FCMService{
 		clients: make(map[string]*messaging.Client),
 		status:  status.StatStorage,
@@ -59,23 +59,23 @@ func NewFCMService(cfg *config.Config, logger logr.Logger) (*FCMService, error) 
 			continue
 		}
 		if v.Enabled && v.KeyPath == "" {
-			return nil, errors.New("push not enabled or misconfigured")
+			panic("push not enabled or misconfigured")
 		}
 
 		opt := option.WithCredentialsFile(v.KeyPath)
 		app, err := firebase.NewApp(context.Background(), nil, opt)
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 
 		client, err := app.Messaging(context.Background())
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 		s.clients[v.AppID] = client
 	}
 
-	return s, nil
+	return s
 }
 
 func (f *FCMService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {

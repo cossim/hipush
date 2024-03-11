@@ -27,7 +27,7 @@ type HonorService struct {
 	logger  logr.Logger
 }
 
-func NewHonorService(cfg *config.Config, logger logr.Logger) (*HonorService, error) {
+func NewHonorService(cfg *config.Config, logger logr.Logger) *HonorService {
 	s := &HonorService{
 		clients: make(map[string]*hClient.HonorPushClient),
 		status:  status.StatStorage,
@@ -39,12 +39,12 @@ func NewHonorService(cfg *config.Config, logger logr.Logger) (*HonorService, err
 			continue
 		}
 		if v.Enabled && (v.AppID == "" || v.ClientID == "" || v.ClientSecret == "") {
-			return nil, errors.New("push not enabled or misconfigured")
+			panic("push not enabled or misconfigured")
 		}
 		s.clients[v.AppID] = hClient.NewHonorPush(v.ClientID, v.ClientSecret)
 	}
 
-	return s, nil
+	return s
 }
 
 func (h *HonorService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {

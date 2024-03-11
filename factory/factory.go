@@ -5,7 +5,7 @@ import (
 	"github.com/cossim/hipush/push"
 )
 
-type PushServiceCreator func() (push.PushService, error)
+type PushServiceCreator func() push.PushService
 
 type PushServiceFactory struct {
 	creators map[string]push.PushService
@@ -17,18 +17,15 @@ func NewPushServiceFactory() *PushServiceFactory {
 	}
 }
 
-func (f *PushServiceFactory) WithPushService(ps push.PushService, err error) PushServiceCreator {
-	return func() (push.PushService, error) {
-		return ps, err
+func (f *PushServiceFactory) WithPushService(ps push.PushService) PushServiceCreator {
+	return func() push.PushService {
+		return ps
 	}
 }
 
 func (f *PushServiceFactory) Register(creators ...PushServiceCreator) error {
 	for _, c := range creators {
-		ps, err := c()
-		if err != nil {
-			return err
-		}
+		ps := c()
 		f.creators[ps.Name()] = ps
 	}
 	return nil

@@ -27,7 +27,7 @@ type MeizuService struct {
 	logger  logr.Logger
 }
 
-func NewMeizuService(cfg *config.Config, logger logr.Logger) (*MeizuService, error) {
+func NewMeizuService(cfg *config.Config, logger logr.Logger) *MeizuService {
 	s := &MeizuService{
 		clients: make(map[string]func(token, message string) mzp.PushResponse),
 		status:  status.StatStorage,
@@ -36,7 +36,7 @@ func NewMeizuService(cfg *config.Config, logger logr.Logger) (*MeizuService, err
 
 	for _, v := range cfg.Meizu {
 		if !v.Enabled || v.Enabled && (v.AppID == "" || v.AppKey == "") {
-			return nil, errors.New("push not enabled or misconfigured")
+			panic("push not enabled or misconfigured")
 		}
 		s.clients[v.AppID] = func(token, message string) mzp.PushResponse {
 			appid := v.AppID
@@ -45,7 +45,7 @@ func NewMeizuService(cfg *config.Config, logger logr.Logger) (*MeizuService, err
 		}
 	}
 
-	return s, nil
+	return s
 }
 
 func (m *MeizuService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {
