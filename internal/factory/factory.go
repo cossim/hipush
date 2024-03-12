@@ -2,7 +2,7 @@ package factory
 
 import (
 	"errors"
-	"github.com/cossim/hipush/push"
+	"github.com/cossim/hipush/pkg/push"
 )
 
 type PushServiceCreator func() push.PushService

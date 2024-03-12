@@ -3,7 +3,7 @@ package status
 import (
 	"errors"
 	"github.com/cossim/hipush/config"
-	"github.com/cossim/hipush/store"
+	"github.com/cossim/hipush/pkg/store"
 	"github.com/thoas/stats"
 )
 

@@ -6,9 +6,9 @@ import (
 	"errors"
 	mzp "github.com/cossim/go-meizu-push-sdk"
 	"github.com/cossim/hipush/config"
-	"github.com/cossim/hipush/consts"
-	"github.com/cossim/hipush/notify"
-	"github.com/cossim/hipush/status"
+	"github.com/cossim/hipush/pkg/consts"
+	"github.com/cossim/hipush/pkg/notify"
+	"github.com/cossim/hipush/pkg/status"
 	"github.com/go-logr/logr"
 	"log"
 )

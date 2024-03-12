@@ -2,7 +2,7 @@ package http
 
 import (
 	"github.com/cossim/hipush/api/http/v1/dto"
-	"github.com/cossim/hipush/status"
+	"github.com/cossim/hipush/pkg/status"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )

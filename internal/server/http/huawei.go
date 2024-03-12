@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"github.com/cossim/go-hms-push/push/model"
 	"github.com/cossim/hipush/api/http/v1/dto"
-	"github.com/cossim/hipush/consts"
-	"github.com/cossim/hipush/notify"
-	"github.com/cossim/hipush/push"
+	"github.com/cossim/hipush/pkg/consts"
+	"github.com/cossim/hipush/pkg/notify"
+	"github.com/cossim/hipush/pkg/push"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )

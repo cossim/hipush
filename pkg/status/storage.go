@@ -1,8 +1,8 @@
 package status
 
 import (
-	"github.com/cossim/hipush/consts"
-	"github.com/cossim/hipush/store"
+	"github.com/cossim/hipush/pkg/consts"
+	"github.com/cossim/hipush/pkg/store"
 )
 
 type StateStorage struct {
