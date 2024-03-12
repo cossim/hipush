@@ -145,7 +145,7 @@ func (h *HonorService) send(ctx context.Context, appid string, token string, not
 	//		res, err := client.SendMessage(ctx, appid, notification)
 	//		if err != nil || (res != nil && res.Code != 200) {
 	//			if err == nil {
-	//				err = errors.New(res.Message)
+	//				err = errors.New(res.Content)
 	//			} else {
 	//				es = append(es, err)
 	//			}
@@ -160,7 +160,7 @@ func (h *HonorService) send(ctx context.Context, appid string, token string, not
 	//			h.status.AddHonorFailed(1)
 	//
 	//		} else {
-	//			log.Printf("honor send success: %s", res.Message)
+	//			log.Printf("honor send success: %s", res.Content)
 	//			h.status.AddHonorSuccess(1)
 	//		}
 	//	}(notification, token)

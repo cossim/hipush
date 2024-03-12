@@ -38,6 +38,11 @@ type VivoPushNotification struct {
 
 type VivoClickAction struct {
 	// Action 点击跳转类型 1：打开APP首页 2：打开链接 3：自定义 4:打开app内指定页面
-	Action  int    `json:"action,omitempty"`
-	Content string `json:"content,omitempty"`
+	Action int `json:"action,omitempty"`
+
+	// Activity 打开应用内页（activity 的 intent action）
+	Activity string `json:"activity,omitempty"`
+
+	// Url 打开网页的地址
+	Url string `json:"url,omitempty"`
 }

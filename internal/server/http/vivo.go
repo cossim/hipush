@@ -7,7 +7,6 @@ import (
 	"github.com/cossim/hipush/pkg/notify"
 	"github.com/cossim/hipush/pkg/push"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"net/http"
 )
 
@@ -34,20 +33,24 @@ func (h *Handler) handleVivoPush(c *gin.Context, req *dto.PushRequest) error {
 	h.logger.Info("Handling push request", "platform", req.Platform, "appID", req.AppID, "tokens", req.Token, "req", r)
 
 	rr := &notify.VivoPushNotification{
-		AppID:       req.AppID,
-		RequestId:   uuid.New().String(),
-		Tokens:      req.Token,
-		Title:       r.Title,
-		Message:     r.Message,
-		Category:    r.Category,
-		Data:        r.Data,
-		ClickAction: nil,
-		NotifyType:  0,
+		AppID:     req.AppID,
+		RequestId: r.NotifyID,
+		Tokens:    req.Token,
+		Title:     r.Title,
+		Message:   r.Content,
+		Category:  r.Category,
+		Data:      r.Data,
+		ClickAction: &notify.VivoClickAction{
+			Action:   r.ClickAction.Action,
+			Url:      r.ClickAction.Url,
+			Activity: r.ClickAction.Activity,
+		},
+		NotifyType:  r.NotifyType,
 		TTL:         r.TTL,
 		Retry:       0,
 		SendOnline:  false,
 		Foreground:  r.Foreground,
-		Development: true,
+		Development: req.Option.Development,
 	}
 	if err := service.Send(c, rr, &push.SendOptions{
 		DryRun:        req.Option.DryRun,

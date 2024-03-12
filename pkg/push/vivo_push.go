@@ -10,6 +10,7 @@ import (
 	vp "github.com/cossim/vivo-push"
 	"github.com/go-logr/logr"
 	"log"
+	"net/url"
 	"strings"
 )
 
@@ -143,14 +144,21 @@ func (v *VivoService) buildNotification(req *notify.VivoPushNotification) (*vp.M
 
 	// 设置默认的 ClickAction
 	defaultClickAction := &notify.VivoClickAction{
-		Action:  1,
-		Content: "",
+		Action: 1,
 	}
 
 	// 检查 ClickAction 是否为空，为空则使用默认值
 	clickAction := req.ClickAction
 	if clickAction == nil {
 		clickAction = defaultClickAction
+	}
+
+	// 检查 URL 是否为合法 URL
+	if clickAction.Action == 2 {
+		_, err := url.Parse(clickAction.Url)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// 检查 NotifyType 是否为有效值
@@ -178,7 +186,7 @@ func (v *VivoService) buildNotification(req *notify.VivoPushNotification) (*vp.M
 		Content:         req.Message,
 		TimeToLive:      int64(req.TTL),
 		SkipType:        clickAction.Action,
-		SkipContent:     clickAction.Content,
+		SkipContent:     clickAction.Url,
 		NetworkType:     -1,
 		ClientCustomMap: req.Data,
 		//Extra:           req.Data.ExtraMap(),

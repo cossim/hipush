@@ -20,7 +20,6 @@ const (
 )
 
 type HuaweiPushRequestData struct {
-	DryRun      bool              `json:"dry_run,omitempty"`
 	Foreground  bool              `json:"foreground,omitempty"`
 	TTL         string            `json:"ttl,omitempty"`
 	Type        string            `json:"type,omitempty"`
@@ -71,14 +70,16 @@ type Sound struct {
 }
 
 type VivoPushRequestData struct {
-	DryRun     bool
-	Foreground bool
-	TTL        int
-	Type       string
-	Title      string
-	Message    string
-	Category   string
-	Data       map[string]string
+	Foreground bool `json:"foreground,omitempty"`
+	TTL        int  `json:"ttl,omitempty"`
+	// NotifyType 通知类型 1:无，2:响铃，3:振动，4:响铃和振动
+	NotifyType  int               `json:"notify_type,omitempty"`
+	NotifyID    string            `json:"notify_id,omitempty"`
+	Title       string            `json:"title"`
+	Content     string            `json:"content"`
+	Category    string            `json:"category,omitempty"`
+	Data        map[string]string `json:"data,omitempty"`
+	ClickAction ClickAction       `json:"click_action,omitempty"`
 }
 
 type OppoPushRequestData struct {
