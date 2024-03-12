@@ -20,17 +20,25 @@ const (
 )
 
 type HuaweiPushRequestData struct {
-	DryRun      bool
-	Foreground  bool
-	TTL         string
-	Type        string
-	Title       string
-	Message     string
-	Category    string
-	Icon        string
-	Img         string
-	Sound       string
-	ClickAction ClickAction // 点击行为
+	DryRun      bool              `json:"dry_run,omitempty"`
+	Foreground  bool              `json:"foreground,omitempty"`
+	TTL         string            `json:"ttl,omitempty"`
+	Type        string            `json:"type,omitempty"`
+	Title       string            `json:"title"`
+	Message     string            `json:"message"`
+	Category    string            `json:"category,omitempty"`
+	Icon        string            `json:"icon,omitempty"`
+	Img         string            `json:"img,omitempty"`
+	Sound       string            `json:"sound,omitempty"`
+	ClickAction ClickAction       `json:"click_action,omitempty"`
+	Badge       BadgeNotification `json:"badge,omitempty"`
+}
+
+// BadgeNotification 结构体用于表示Android通知消息角标控制
+type BadgeNotification struct {
+	AddNum int    `json:"addNum,omitempty"`
+	SetNum int    `json:"setNum,omitempty"`
+	Class  string `json:"class"`
 }
 
 type APNsPushRequest struct {
@@ -207,8 +215,11 @@ type HonorPushRequestData struct {
 	// ClickAction 点击动作
 	ClickAction ClickAction `json:"click_action"`
 
+	// Badge 消息角标
+	Badge BadgeNotification `json:"badge,omitempty"`
+
 	// 附加的自定义参数
-	Data map[string]string `json:"data,omitempty"`
+	Data map[string]interface{} `json:"data,omitempty"`
 }
 
 type ClickAction struct {

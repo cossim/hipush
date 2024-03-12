@@ -36,7 +36,7 @@ func (h *Handler) handleHuaweiPush(c *gin.Context, req *dto.PushRequest) error {
 	rr := &notify.HMSPushNotification{
 		AppID:       req.AppID,
 		Tokens:      req.Token,
-		Development: true,
+		Development: req.Option.Development,
 		MessageRequest: &model.MessageRequest{
 			Message: &model.Message{
 				Notification: &model.Notification{
@@ -47,6 +47,11 @@ func (h *Handler) handleHuaweiPush(c *gin.Context, req *dto.PushRequest) error {
 					Notification: &model.AndroidNotification{
 						Title: r.Title,
 						Body:  r.Message,
+						Badge: &model.BadgeNotification{
+							AddNum: r.Badge.AddNum,
+							SetNum: r.Badge.SetNum,
+							Class:  r.Badge.Class,
+						},
 					},
 				},
 				Token: req.Token,

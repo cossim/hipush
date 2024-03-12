@@ -79,8 +79,8 @@ type Button struct {
 // BadgeNotification 结构体用于表示Android通知消息角标控制
 type BadgeNotification struct {
 	AddNum     int    `json:"addNum,omitempty"`
-	BadgeClass string `json:"badgeClass"`
 	SetNum     int    `json:"setNum,omitempty"`
+	BadgeClass string `json:"badgeClass"`
 }
 
 // SendMessageResponse 结构体用于表示SendMessage函数的响应

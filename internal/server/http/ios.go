@@ -48,6 +48,7 @@ func (h *Handler) handleIOSPush(c *gin.Context, req *dto.PushRequest) error {
 		ContentAvailable: r.ContentAvailable,
 		Priority:         r.Priority,
 		Data:             r.Data,
+		Badge:            r.Badge,
 		Expiration:       nil,
 	}
 	if err := service.Send(c, rr, &push.SendOptions{

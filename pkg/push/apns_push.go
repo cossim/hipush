@@ -14,7 +14,6 @@ import (
 	"github.com/sideshow/apns2/token"
 	"log"
 	"net"
-	"net/http"
 	"path/filepath"
 	"sync"
 	"time"
@@ -270,13 +269,13 @@ func (a *APNsService) send(appid string, token string, notification *apns2.Notif
 		log.Printf("apns send error: %s", err)
 		a.status.AddIosFailed(1)
 		resp.Msg = err.Error()
-	} else if res != nil && res.StatusCode != http.StatusOK {
+	} else if res != nil && res.StatusCode != Success {
 		log.Printf("apns send error: %s", res.Reason)
 		a.status.AddIosFailed(1)
 		err = errors.New(res.Reason)
 		resp.Msg = res.Reason
 	} else {
-		log.Printf("apns send success: %s", res.Reason)
+		log.Printf("apns send success: %v", res)
 		a.status.AddIosSuccess(1)
 		resp.Code = Success
 		resp.Msg = res.Reason

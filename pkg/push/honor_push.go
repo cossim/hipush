@@ -2,6 +2,7 @@ package push
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/cossim/hipush/config"
 	hClient "github.com/cossim/hipush/pkg/client/push"
@@ -197,6 +198,7 @@ func (h *HonorService) buildAndroidNotification(req *notify.HonorPushNotificatio
 	notification := &hClient.Notification{
 		Title: req.Title,
 		Body:  req.Content,
+		Image: req.Image,
 	}
 
 	// 构建 Android 平台的通知消息
@@ -204,6 +206,11 @@ func (h *HonorService) buildAndroidNotification(req *notify.HonorPushNotificatio
 		Title: req.Title,
 		Body:  req.Content,
 		Image: req.Image,
+		Badge: &hClient.BadgeNotification{
+			AddNum:     req.Badge.AddNum,
+			SetNum:     req.Badge.SetNum,
+			BadgeClass: req.Badge.BadgeClass,
+		},
 		ClickAction: &hClient.ClickAction{
 			Type:   req.ClickAction.Action,
 			Intent: req.ClickAction.Activity,
@@ -218,18 +225,24 @@ func (h *HonorService) buildAndroidNotification(req *notify.HonorPushNotificatio
 		targetUserType = 1
 	}
 
+	// 将 map 转换为 JSON 字符串
+	data, err := json.Marshal(req.Data)
+	if err != nil {
+		log.Printf("Error marshalling data: %v", err)
+	}
+
 	// 构建 Android 平台消息推送配置
 	androidConfig := &hClient.AndroidConfig{
-		TTL:            req.TTL,  // 设置消息缓存时间
-		BiTag:          "",       // 设置批量任务消息标识
-		Data:           req.Data, // 设置自定义消息负载
+		TTL:            req.TTL,      // 设置消息缓存时间
+		BiTag:          "",           // 设置批量任务消息标识
+		Data:           string(data), // 设置自定义消息负载
 		Notification:   androidNotification,
 		TargetUserType: targetUserType, // 设置目标用户类型
 	}
 
 	// 构建发送消息请求
 	sendMessageReq := &hClient.SendMessageRequest{
-		Data:         req.Data, // 设置自定义消息负载
+		Data:         string(data), // 设置自定义消息负载
 		Notification: notification,
 		Android:      androidConfig,
 		Token:        req.Tokens,

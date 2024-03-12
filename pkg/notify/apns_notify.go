@@ -179,7 +179,7 @@ type Alert struct {
 // Ref: https://apple.co/2VtH6Iu
 func GetIOSNotification(req *ApnsPushNotification) *apns2.Notification {
 	notification := &apns2.Notification{
-		//ApnsID: req.ApnsID,
+		//ApnsID:     req.ApnsID,
 		Topic:      req.Topic,
 		CollapseID: req.CollapseID,
 	}

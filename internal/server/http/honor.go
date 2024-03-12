@@ -41,13 +41,18 @@ func (h *Handler) handleHonorPush(c *gin.Context, req *dto.PushRequest) {
 		Priority: "",
 		Category: "",
 		//TTL:         strconv.Itoa(r.TTL),
-		Data:        "",
-		Development: true,
+		Data:        r.Data,
+		Development: req.Option.Development,
+		Badge: &notify.BadgeNotification{
+			AddNum:     r.Badge.AddNum,
+			SetNum:     r.Badge.SetNum,
+			BadgeClass: r.Badge.Class,
+		},
 		ClickAction: &notify.HonorClickAction{
-			Action:   r.ClickAction.Action,
-			Activity: r.ClickAction.Activity,
-			Url:      r.ClickAction.Url,
-			//Parameters: r.ClickAction.Parameters,
+			Action:     r.ClickAction.Action,
+			Activity:   r.ClickAction.Activity,
+			Url:        r.ClickAction.Url,
+			Parameters: r.ClickAction.Parameters,
 		},
 	}
 	if err := service.Send(c, rr, &push.SendOptions{

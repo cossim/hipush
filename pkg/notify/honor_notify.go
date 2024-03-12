@@ -9,11 +9,21 @@ type HonorPushNotification struct {
 	Priority string   `json:"priority,omitempty"`
 	Category string   `json:"category,omitempty"`
 	TTL      string   `json:"ttl,omitempty"`
-	Data     string   `json:"data,omitempty"`
+
+	Data map[string]interface{} `json:"data,omitempty"`
 
 	Development bool `json:"development,omitempty"`
 
+	Badge *BadgeNotification `json:"badge,omitempty"`
+
 	ClickAction *HonorClickAction `json:"click_action,omitempty"`
+}
+
+// BadgeNotification 结构体用于表示Android通知消息角标控制
+type BadgeNotification struct {
+	AddNum     int    `json:"addNum,omitempty"`
+	SetNum     int    `json:"setNum,omitempty"`
+	BadgeClass string `json:"badgeClass"`
 }
 
 type HonorClickAction struct {
@@ -30,5 +40,5 @@ type HonorClickAction struct {
 	Url string `json:"url,omitempty"`
 
 	// Parameters url跳转后传的参数拼接在url后面
-	Parameters string `json:"parameters,omitempty"`
+	Parameters map[string]interface{} `json:"parameters,omitempty"`
 }
