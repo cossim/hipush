@@ -203,7 +203,7 @@ type HonorPushRequestData struct {
 	Group string `json:"group,omitempty"`
 
 	// NotifyId 消息通知ID，用于消息覆盖
-	NotifyId int64 `json:"notify_id,omitempty"`
+	NotifyId int `json:"notify_id,omitempty"`
 
 	// TTL 如果用户离线，设置消息在服务器保存的时间，单位：ms，服务器默认最长保留两周。
 	TTL int `json:"ttl,omitempty"`

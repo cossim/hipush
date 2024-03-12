@@ -203,9 +203,10 @@ func (h *HonorService) buildAndroidNotification(req *notify.HonorPushNotificatio
 
 	// 构建 Android 平台的通知消息
 	androidNotification := &hClient.AndroidNotification{
-		Title: req.Title,
-		Body:  req.Content,
-		Image: req.Image,
+		Title:    req.Title,
+		Body:     req.Content,
+		Image:    req.Image,
+		NotifyID: req.NotifyId,
 		Badge: &hClient.BadgeNotification{
 			AddNum:     req.Badge.AddNum,
 			SetNum:     req.Badge.SetNum,

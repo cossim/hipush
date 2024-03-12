@@ -153,6 +153,10 @@ func (v *VivoService) buildNotification(req *notify.VivoPushNotification) (*vp.M
 		clickAction = defaultClickAction
 	}
 
+	if clickAction.Action == 0 {
+		clickAction.Action = 1
+	}
+
 	// 检查 URL 是否为合法 URL
 	if clickAction.Action == 2 {
 		_, err := url.Parse(clickAction.Url)

@@ -54,6 +54,7 @@ func (h *Handler) handleHonorPush(c *gin.Context, req *dto.PushRequest) {
 			Url:        r.ClickAction.Url,
 			Parameters: r.ClickAction.Parameters,
 		},
+		NotifyId: r.NotifyId,
 	}
 	if err := service.Send(c, rr, &push.SendOptions{
 		DryRun:        req.Option.DryRun,

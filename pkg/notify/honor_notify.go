@@ -10,6 +10,9 @@ type HonorPushNotification struct {
 	Category string   `json:"category,omitempty"`
 	TTL      string   `json:"ttl,omitempty"`
 
+	// NotifyId 消息通知ID，用于消息覆盖
+	NotifyId int `json:"notify_id,omitempty"`
+
 	Data map[string]interface{} `json:"data,omitempty"`
 
 	Development bool `json:"development,omitempty"`
