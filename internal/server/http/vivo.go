@@ -33,13 +33,13 @@ func (h *Handler) handleVivoPush(c *gin.Context, req *dto.PushRequest) error {
 	h.logger.Info("Handling push request", "platform", req.Platform, "appID", req.AppID, "tokens", req.Token, "req", r)
 
 	rr := &notify.VivoPushNotification{
-		AppID:     req.AppID,
-		RequestId: r.NotifyID,
-		Tokens:    req.Token,
-		Title:     r.Title,
-		Message:   r.Content,
-		Category:  r.Category,
-		Data:      r.Data,
+		AppID: req.AppID,
+		//RequestId: r.NotifyID,
+		Tokens:   req.Token,
+		Title:    r.Title,
+		Message:  r.Content,
+		Category: r.Category,
+		Data:     r.Data,
 		ClickAction: &notify.VivoClickAction{
 			Action:   r.ClickAction.Action,
 			Url:      r.ClickAction.Url,

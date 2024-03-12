@@ -191,6 +191,8 @@ func (v *VivoService) buildNotification(req *notify.VivoPushNotification) (*vp.M
 		ClientCustomMap: req.Data,
 		//Extra:           req.Data.ExtraMap(),
 		RequestId:      req.RequestId,
+		NotifyID:       req.NotifyID,
+		Category:       req.Category,
 		PushMode:       pushMode, // 默认为正式推送
 		ForegroundShow: req.Foreground,
 	}

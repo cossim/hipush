@@ -5,6 +5,10 @@ package notify
 type VivoPushNotification struct {
 	AppID     string `json:"app_id,omitempty"`
 	RequestId string `json:"request_id,omitempty"`
+
+	// NotifyID 每条消息在通知栏的唯一标识 可以用于覆盖消息
+	NotifyID int `json:"notify_id,omitempty"`
+
 	// Tokens 对应regId列表
 	Tokens []string `json:"tokens" binding:"required"`
 

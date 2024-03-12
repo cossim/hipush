@@ -74,7 +74,7 @@ type VivoPushRequestData struct {
 	TTL        int  `json:"ttl,omitempty"`
 	// NotifyType 通知类型 1:无，2:响铃，3:振动，4:响铃和振动
 	NotifyType  int               `json:"notify_type,omitempty"`
-	NotifyID    string            `json:"notify_id,omitempty"`
+	NotifyID    int               `json:"notify_id,omitempty"`
 	Title       string            `json:"title"`
 	Content     string            `json:"content"`
 	Category    string            `json:"category,omitempty"`

@@ -37,8 +37,8 @@ github.com/cossim/go-hms-push v0.0.0-20240301034220-38310a1d80e5 h1:AGXSM5Clpfmt
 github.com/cossim/go-hms-push v0.0.0-20240301034220-38310a1d80e5/go.mod h1:QqZK9q8Ecb/frr2gWxb4+wz4MAFRzlVelNCr1VFRZrQ=
 github.com/cossim/go-meizu-push-sdk v0.0.0-20240308111828-f4255aaae3ac h1:JTkGqCyzrVd5/z/kikebm26O9mx3F+7L8UZzid1jZ6Y=
 github.com/cossim/go-meizu-push-sdk v0.0.0-20240308111828-f4255aaae3ac/go.mod h1:XwwjjCpZvHHtdhsetBDoZ46WTnzaGWrr+DlVRQasiEE=
-github.com/cossim/vivo-push v0.0.0-20240301025332-148acd987861 h1:7VkgDgzr3C38pLkyDjhKRqOIrlhb1nVz8JL+0lSi4Xw=
-github.com/cossim/vivo-push v0.0.0-20240301025332-148acd987861/go.mod h1:PHaZK+wOOXEZR4B8pt2MYWpV1o+jGZ1CcAh4858IvTg=
+github.com/cossim/vivo-push v0.0.0-20240312093754-a5c2baaa4799 h1:4XB4/G44LwHBKKrm3ZpGWiXJ7bjYbeB9aRExq4eyaXQ=
+github.com/cossim/vivo-push v0.0.0-20240312093754-a5c2baaa4799/go.mod h1:PHaZK+wOOXEZR4B8pt2MYWpV1o+jGZ1CcAh4858IvTg=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
