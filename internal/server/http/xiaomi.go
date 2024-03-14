@@ -43,7 +43,7 @@ func (h *Handler) handleXiaomiPush(c *gin.Context, req *dto.PushRequest) error {
 		IsScheduled:   r.IsScheduled,
 		ScheduledTime: r.ScheduledTime,
 	}
-	if err := service.Send(c, rr, &push.SendOptions{
+	if err := service.Send(c, req.AppID, rr, &push.SendOptions{
 		DryRun:        req.Option.DryRun,
 		Retry:         req.Option.Retry,
 		RetryInterval: req.Option.RetryInterval,

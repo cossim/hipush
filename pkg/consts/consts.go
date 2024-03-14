@@ -32,6 +32,18 @@ const (
 	PlatformHonor Platform = "honor"
 )
 
+// PlatformSlice 存储所有平台的切片
+var PlatformSlice = []Platform{
+	PlatformIOS,
+	PlatformAndroid,
+	PlatformHuawei,
+	PlatformXiaomi,
+	PlatformVivo,
+	PlatformOppo,
+	PlatformMeizu,
+	PlatformHonor,
+}
+
 // String converts the enum value to its string representation.
 func (p Platform) String() string {
 	switch p {

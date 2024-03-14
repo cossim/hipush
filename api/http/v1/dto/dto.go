@@ -78,6 +78,7 @@ type VivoPushRequestData struct {
 	Title       string            `json:"title"`
 	Content     string            `json:"content"`
 	Category    string            `json:"category,omitempty"`
+	TaskID      string            `json:"task_id,omitempty"`
 	Data        map[string]string `json:"data,omitempty"`
 	ClickAction ClickAction       `json:"click_action,omitempty"`
 }

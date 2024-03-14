@@ -51,7 +51,7 @@ func (h *Handler) handleMeizuPush(c *gin.Context, req *dto.PushRequest) error {
 		ScheduledStartTime: r.ScheduledStartTime,
 		ScheduledEndTime:   r.ScheduledEndTime,
 	}
-	if err := service.Send(c, rr, &push.SendOptions{
+	if err := service.Send(c, req.AppID, rr, &push.SendOptions{
 		DryRun:        req.Option.DryRun,
 		Retry:         req.Option.Retry,
 		RetryInterval: req.Option.RetryInterval,

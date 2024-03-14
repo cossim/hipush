@@ -86,7 +86,7 @@ func (h *Handler) Push(ctx context.Context, req *v1.PushRequest) (*v1.PushRespon
 		return nil, err
 	}
 
-	if err := service.Send(ctx, r, &push.SendOptions{
+	if err := service.Send(ctx, req.AppID, r, &push.SendOptions{
 		DryRun: req.Option.DryRun,
 		Retry:  int(req.Option.Retry),
 	}); err != nil {

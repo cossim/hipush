@@ -9,6 +9,10 @@ import (
 	"time"
 )
 
+var (
+	ErrInvalidAppID = errors.New("invalid appid or appid push is not enabled")
+)
+
 // PushRequest 获取不同厂商的推送请求参数
 type PushRequest interface {
 	Get() interface{}
@@ -95,10 +99,33 @@ type PushRequest interface {
 	GetInterruptionLevel() string
 }
 
+type NotifyObject interface {
+	GetCode() int
+	SetCode(code int)
+	GetMsg() string
+	SetMsg(msg string)
+	GetNotifyID() int
+	GetSend() int
+	SetSend(i int)
+	GetReceive() int
+	SetReceive(i int)
+	GetDisplay() int
+	SetDisplay(i int)
+	GetClick() int
+	SetClick(i int)
+	GetValidDevice() int
+	SetValidDevice(i int)
+	GetActualSend() int
+	SetActualSend(i int)
+}
+
 // PushService 提供推送服务的接口
 type PushService interface {
 	// Send 发送消息给单个设备
-	Send(ctx context.Context, req interface{}, opt ...SendOption) error
+	Send(ctx context.Context, appid string, req interface{}, opt ...SendOption) error
+
+	// GetNotifyStatus 查询通知发送状态
+	GetNotifyStatus(ctx context.Context, appid string, notifyID string, obj NotifyObject) error
 
 	// Name 获取推送的手机厂商名称
 	Name() string

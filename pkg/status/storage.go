@@ -160,6 +160,22 @@ func (s *StateStorage) AddVivoSuccess(count int64) {
 	s.store.Add(consts.VivoSuccess, count)
 }
 
+func (s *StateStorage) SetVivoSend(count int64) {
+	s.store.Set(consts.VivoSend, count)
+}
+
+func (s *StateStorage) SetVivoReceive(count int64) {
+	s.store.Set(consts.VivoReceive, count)
+}
+
+func (s *StateStorage) SetVivoDisplay(count int64) {
+	s.store.Set(consts.VivoDisplay, count)
+}
+
+func (s *StateStorage) SetVivoClick(count int64) {
+	s.store.Set(consts.VivoClick, count)
+}
+
 func (s *StateStorage) AddVivoFailed(count int64) {
 	s.store.Add(consts.VivoFailed, count)
 }
@@ -232,6 +248,58 @@ func (s *StateStorage) GetFailedCount() int64 {
 	return count
 }
 
+func (s *StateStorage) GetSendCount() int64 {
+	var count int64
+	count += s.GetAndroidSend()
+	count += s.GetIosSend()
+	count += s.GetHuaweiSend()
+	count += s.GetXiaomiSend()
+	count += s.GetVivoSend()
+	count += s.GetOppoSend()
+	count += s.GetMeizuSend()
+	count += s.GetHonorSend()
+	return count
+}
+
+func (s *StateStorage) GetReceiveCount() int64 {
+	var count int64
+	count += s.GetAndroidReceive()
+	count += s.GetIosReceive()
+	count += s.GetHuaweiReceive()
+	count += s.GetXiaomiReceive()
+	count += s.GetVivoReceive()
+	count += s.GetOppoReceive()
+	count += s.GetMeizuReceive()
+	count += s.GetHonorReceive()
+	return count
+}
+
+func (s *StateStorage) GetDisplayCount() int64 {
+	var count int64
+	count += s.GetAndroidDisplay()
+	count += s.GetIosDisplay()
+	count += s.GetHuaweiDisplay()
+	count += s.GetXiaomiDisplay()
+	count += s.GetVivoDisplay()
+	count += s.GetOppoDisplay()
+	count += s.GetMeizuDisplay()
+	count += s.GetHonorDisplay()
+	return count
+}
+
+func (s *StateStorage) GetClickCount() int64 {
+	var count int64
+	count += s.GetAndroidClick()
+	count += s.GetIosClick()
+	count += s.GetHuaweiClick()
+	count += s.GetXiaomiClick()
+	count += s.GetVivoClick()
+	count += s.GetOppoClick()
+	count += s.GetMeizuClick()
+	count += s.GetHonorClick()
+	return count
+}
+
 func (s *StateStorage) GetHttpTotal() int64 {
 	return s.store.Get(consts.HTTPTotal)
 }
@@ -260,14 +328,28 @@ func (s *StateStorage) GetIosTotal() int64 {
 	return s.store.Get(consts.IosTotal)
 }
 
-// GetIosSuccess show success counts of iOS notification.
 func (s *StateStorage) GetIosSuccess() int64 {
 	return s.store.Get(consts.IosSuccess)
 }
 
-// GetIosFailed show Failed counts of iOS notification.
 func (s *StateStorage) GetIosFailed() int64 {
 	return s.store.Get(consts.IosFailed)
+}
+
+func (s *StateStorage) GetIosSend() int64 {
+	return s.store.Get(consts.IosSend)
+}
+
+func (s *StateStorage) GetIosReceive() int64 {
+	return s.store.Get(consts.IosReceive)
+}
+
+func (s *StateStorage) GetIosDisplay() int64 {
+	return s.store.Get(consts.IosDisplay)
+}
+
+func (s *StateStorage) GetIosClick() int64 {
+	return s.store.Get(consts.IosClick)
 }
 
 func (s *StateStorage) GetAndroidTotal() int64 {
@@ -282,6 +364,22 @@ func (s *StateStorage) GetAndroidFailed() int64 {
 	return s.store.Get(consts.AndroidFailed)
 }
 
+func (s *StateStorage) GetAndroidSend() int64 {
+	return s.store.Get(consts.AndroidSend)
+}
+
+func (s *StateStorage) GetAndroidReceive() int64 {
+	return s.store.Get(consts.AndroidReceive)
+}
+
+func (s *StateStorage) GetAndroidDisplay() int64 {
+	return s.store.Get(consts.AndroidDisplay)
+}
+
+func (s *StateStorage) GetAndroidClick() int64 {
+	return s.store.Get(consts.AndroidClick)
+}
+
 func (s *StateStorage) GetHuaweiTotal() int64 {
 	return s.store.Get(consts.AndroidTotal)
 }
@@ -292,6 +390,22 @@ func (s *StateStorage) GetHuaweiSuccess() int64 {
 
 func (s *StateStorage) GetHuaweiFailed() int64 {
 	return s.store.Get(consts.HuaweiFailed)
+}
+
+func (s *StateStorage) GetHuaweiSend() int64 {
+	return s.store.Get(consts.AndroidSend)
+}
+
+func (s *StateStorage) GetHuaweiReceive() int64 {
+	return s.store.Get(consts.HuaweiReceive)
+}
+
+func (s *StateStorage) GetHuaweiDisplay() int64 {
+	return s.store.Get(consts.HuaweiDisplay)
+}
+
+func (s *StateStorage) GetHuaweiClick() int64 {
+	return s.store.Get(consts.HuaweiClick)
 }
 
 func (s *StateStorage) GetXiaomiTotal() int64 {
@@ -306,6 +420,22 @@ func (s *StateStorage) GetXiaomiFailed() int64 {
 	return s.store.Get(consts.XiaomiFailed)
 }
 
+func (s *StateStorage) GetXiaomiSend() int64 {
+	return s.store.Get(consts.XiaomiSend)
+}
+
+func (s *StateStorage) GetXiaomiReceive() int64 {
+	return s.store.Get(consts.XiaomiReceive)
+}
+
+func (s *StateStorage) GetXiaomiDisplay() int64 {
+	return s.store.Get(consts.XiaomiDisplay)
+}
+
+func (s *StateStorage) GetXiaomiClick() int64 {
+	return s.store.Get(consts.XiaomiClick)
+}
+
 func (s *StateStorage) GetVivoTotal() int64 {
 	return s.store.Get(consts.VivoTotal)
 }
@@ -316,6 +446,22 @@ func (s *StateStorage) GetVivoSuccess() int64 {
 
 func (s *StateStorage) GetVivoFailed() int64 {
 	return s.store.Get(consts.VivoFailed)
+}
+
+func (s *StateStorage) GetVivoSend() int64 {
+	return s.store.Get(consts.VivoSend)
+}
+
+func (s *StateStorage) GetVivoReceive() int64 {
+	return s.store.Get(consts.VivoReceive)
+}
+
+func (s *StateStorage) GetVivoDisplay() int64 {
+	return s.store.Get(consts.VivoDisplay)
+}
+
+func (s *StateStorage) GetVivoClick() int64 {
+	return s.store.Get(consts.VivoClick)
 }
 
 func (s *StateStorage) GetOppoTotal() int64 {
@@ -330,6 +476,22 @@ func (s *StateStorage) GetOppoFailed() int64 {
 	return s.store.Get(consts.OppoFailed)
 }
 
+func (s *StateStorage) GetOppoSend() int64 {
+	return s.store.Get(consts.OppoSend)
+}
+
+func (s *StateStorage) GetOppoReceive() int64 {
+	return s.store.Get(consts.OppoReceive)
+}
+
+func (s *StateStorage) GetOppoDisplay() int64 {
+	return s.store.Get(consts.OppoDisplay)
+}
+
+func (s *StateStorage) GetOppoClick() int64 {
+	return s.store.Get(consts.OppoClick)
+}
+
 func (s *StateStorage) GetMeizuTotal() int64 {
 	return s.store.Get(consts.MeizuTotal)
 }
@@ -342,6 +504,22 @@ func (s *StateStorage) GetMeizuFailed() int64 {
 	return s.store.Get(consts.MeizuFailed)
 }
 
+func (s *StateStorage) GetMeizuSend() int64 {
+	return s.store.Get(consts.MeizuSend)
+}
+
+func (s *StateStorage) GetMeizuReceive() int64 {
+	return s.store.Get(consts.MeizuReceive)
+}
+
+func (s *StateStorage) GetMeizuDisplay() int64 {
+	return s.store.Get(consts.MeizuDisplay)
+}
+
+func (s *StateStorage) GetMeizuClick() int64 {
+	return s.store.Get(consts.MeizuClick)
+}
+
 func (s *StateStorage) GetHonorTotal() int64 {
 	return s.store.Get(consts.HonorTotal)
 }
@@ -352,4 +530,20 @@ func (s *StateStorage) GetHonorSuccess() int64 {
 
 func (s *StateStorage) GetHonorFailed() int64 {
 	return s.store.Get(consts.HonorFailed)
+}
+
+func (s *StateStorage) GetHonorSend() int64 {
+	return s.store.Get(consts.HonorSend)
+}
+
+func (s *StateStorage) GetHonorReceive() int64 {
+	return s.store.Get(consts.HonorReceive)
+}
+
+func (s *StateStorage) GetHonorDisplay() int64 {
+	return s.store.Get(consts.HonorDisplay)
+}
+
+func (s *StateStorage) GetHonorClick() int64 {
+	return s.store.Get(consts.HonorClick)
 }

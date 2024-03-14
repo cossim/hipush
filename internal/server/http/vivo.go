@@ -45,6 +45,8 @@ func (h *Handler) handleVivoPush(c *gin.Context, req *dto.PushRequest) error {
 			Url:      r.ClickAction.Url,
 			Activity: r.ClickAction.Activity,
 		},
+		TaskID:      r.TaskID,
+		NotifyID:    r.NotifyID,
 		NotifyType:  r.NotifyType,
 		TTL:         r.TTL,
 		Retry:       0,
@@ -52,7 +54,7 @@ func (h *Handler) handleVivoPush(c *gin.Context, req *dto.PushRequest) error {
 		Foreground:  r.Foreground,
 		Development: req.Option.Development,
 	}
-	if err := service.Send(c, rr, &push.SendOptions{
+	if err := service.Send(c, req.AppID, rr, &push.SendOptions{
 		DryRun:        req.Option.DryRun,
 		Retry:         req.Option.Retry,
 		RetryInterval: req.Option.RetryInterval,
@@ -60,7 +62,6 @@ func (h *Handler) handleVivoPush(c *gin.Context, req *dto.PushRequest) error {
 		c.JSON(http.StatusInternalServerError, Response{Code: http.StatusBadRequest, Msg: err.Error(), Data: nil})
 		return err
 	}
-
 	c.JSON(http.StatusOK, Response{Code: http.StatusOK, Msg: "Push notification send success", Data: nil})
 	return nil
 }

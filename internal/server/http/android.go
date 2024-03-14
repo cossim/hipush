@@ -53,7 +53,7 @@ func (h *Handler) handleAndroidPush(c *gin.Context, req *dto.PushRequest) error 
 		Data:             nil,
 		Apns:             nil,
 	}
-	if err := service.Send(c, rr, &push.SendOptions{
+	if err := service.Send(c, req.AppID, rr, &push.SendOptions{
 		DryRun:        req.Option.DryRun,
 		Retry:         req.Option.Retry,
 		RetryInterval: req.Option.RetryInterval,

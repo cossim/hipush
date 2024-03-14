@@ -3,11 +3,13 @@ package push
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/pkg/consts"
 	"github.com/cossim/hipush/pkg/notify"
 	"github.com/cossim/hipush/pkg/status"
 	vp "github.com/cossim/vivo-push"
+	"github.com/go-co-op/gocron/v2"
 	"github.com/go-logr/logr"
 	"log"
 	"net/url"
@@ -24,13 +26,16 @@ type VivoService struct {
 	clients map[string]*vp.VivoPush
 	status  *status.StateStorage
 	logger  logr.Logger
+
+	scheduler gocron.Scheduler
 }
 
-func NewVivoService(cfg *config.Config, logger logr.Logger) *VivoService {
+func NewVivoService(cfg *config.Config, logger logr.Logger, scheduler gocron.Scheduler) *VivoService {
 	s := &VivoService{
-		clients: map[string]*vp.VivoPush{},
-		status:  status.StatStorage,
-		logger:  logger,
+		clients:   map[string]*vp.VivoPush{},
+		status:    status.StatStorage,
+		logger:    logger,
+		scheduler: scheduler,
 	}
 
 	for _, v := range cfg.Vivo {
@@ -47,7 +52,7 @@ func NewVivoService(cfg *config.Config, logger logr.Logger) *VivoService {
 	return s
 }
 
-func (v *VivoService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {
+func (v *VivoService) Send(ctx context.Context, appid string, request interface{}, opt ...SendOption) error {
 	req, ok := request.(*notify.VivoPushNotification)
 	if !ok {
 		return errors.New("invalid request")
@@ -66,35 +71,41 @@ func (v *VivoService) Send(ctx context.Context, request interface{}, opt ...Send
 	}
 
 	send := func(ctx context.Context, token string) (*Response, error) {
-		return v.send(req.AppID, token, notification)
+		return v.send(appid, token, notification)
 	}
-	return RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
 
-	//for {
-	//	newTokens, err := v.send(req)
-	//	if err != nil {
-	//		log.Printf("send error => %v", err)
-	//		es = append(es, err)
-	//	}
-	//	// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
-	//	fmt.Println("retryCount => ", retryCount)
-	//	fmt.Println("maxRetry => ", maxRetry)
-	//	if len(newTokens) > 0 && retryCount < maxRetry {
-	//		retryCount++
-	//		req.Tokens = newTokens
-	//	} else {
-	//		break
-	//	}
-	//}
-	//
-	//var errorMsgs []string
-	//for _, err := range es {
-	//	errorMsgs = append(errorMsgs, err.Error())
-	//}
-	//if len(errorMsgs) > 0 {
-	//	return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
-	//}
-	//return nil
+	if err := RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100); err != nil {
+		return err
+	}
+
+	_, err = v.scheduler.NewJob(gocron.OneTimeJob(gocron.OneTimeJobStartImmediately()), gocron.NewTask(func(appid, taskID string) {
+		fmt.Println("start vivo job")
+		client, ok := v.clients[appid]
+		if !ok {
+			v.logger.Error(ErrInvalidAppID, ErrInvalidAppID.Error())
+			return
+		}
+		resp, err := client.GetMessageStatusByJobKey(taskID)
+		if err != nil {
+			v.logger.Error(err, "vivo get status error")
+			return
+		}
+		if resp.Result == 0 {
+			for _, ss := range resp.Statistics {
+				if ss.TaskId == taskID {
+					v.status.SetVivoSend(int64(ss.Send))
+					v.status.SetVivoReceive(int64(ss.Receive))
+					v.status.SetVivoDisplay(int64(ss.Display))
+					v.status.SetVivoClick(int64(ss.Click))
+				}
+			}
+		}
+	}, appid, req.TaskID))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (v *VivoService) send(appid string, token string, notification *vp.Message) (*Response, error) {
@@ -104,6 +115,8 @@ func (v *VivoService) send(appid string, token string, notification *vp.Message)
 	}
 
 	v.status.AddVivoTotal(1)
+
+	fmt.Println("notification Category => ", notification.Category)
 
 	resp := &Response{Code: Fail}
 	notification.RegId = token
@@ -119,7 +132,7 @@ func (v *VivoService) send(appid string, token string, notification *vp.Message)
 		resp.Code = res.Result
 		resp.Msg = res.Desc
 	} else {
-		log.Printf("vivo send success: %s", res.Desc)
+		log.Printf("vivo send success taskId: %v", res.TaskId)
 		v.status.AddVivoSuccess(1)
 		resp.Code = Success
 		resp.Msg = res.Desc
@@ -201,6 +214,21 @@ func (v *VivoService) buildNotification(req *notify.VivoPushNotification) (*vp.M
 		ForegroundShow: req.Foreground,
 	}
 	return message, nil
+}
+
+func (v *VivoService) GetNotifyStatus(ctx context.Context, appid, notifyID string, obj NotifyObject) error {
+	client, ok := v.clients[appid]
+	if !ok {
+		return ErrInvalidAppID
+	}
+	fmt.Println("notifyID => ", notifyID)
+	key, err := client.GetMessageStatusByJobKey(notifyID)
+	if err != nil {
+		fmt.Println("VivoService GetNotifyStatus err => ", err)
+		return err
+	}
+	fmt.Println("VivoService GetNotifyStatus => ", key)
+	return err
 }
 
 func (v *VivoService) Name() string {

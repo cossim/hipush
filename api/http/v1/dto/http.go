@@ -42,6 +42,10 @@ type PushStatRequest struct {
 
 	// Method 推送方法 http、grpc
 	Method string `json:"method"`
+
+	AppID string `json:"app_id" binding:"required"`
+
+	NotifyID string `json:"notify_id" binding:"required"`
 }
 
 // PushStat 每个推送平台的推送状态
@@ -49,6 +53,10 @@ type PushStat struct {
 	Total   int64 `json:"total"`   // 总推送数
 	Success int64 `json:"success"` // 成功推送数
 	Failed  int64 `json:"failed"`  // 失败推送数
+	Send    int64 `json:"send"`    // 发送数
+	Receive int64 `json:"receive"` // 到达数
+	Display int64 `json:"display"` // 展示数
+	Click   int64 `json:"click"`   // 点击数
 }
 
 // PushStats 所有推送平台的推送状态

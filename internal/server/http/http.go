@@ -41,6 +41,7 @@ func (h *Handler) Start(ctx context.Context) error {
 	r := gin.Default()
 	r.POST("/api/v1/push", h.pushHandler)
 	r.GET("/api/v1/push/stat", h.pushStatHandler)
+	r.GET("/api/v1/message/stat", h.pushMessageStatHandler)
 
 	srv := &http.Server{
 		Addr:    h.cfg.HTTP.Addr(),
