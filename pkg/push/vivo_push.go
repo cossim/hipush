@@ -268,7 +268,17 @@ func (v *VivoService) buildNotification(req *notify.VivoPushNotification) (*vp.M
 	return message, nil
 }
 
-func (v *VivoService) GetTasksStatus(ctx context.Context, appid string, tasks []string, list push.TaskObjectList) error {
+func (v *VivoService) GetTasksStatus(ctx context.Context, key string, tasks []string, list push.TaskObjectList) error {
+	var appid string
+	appid, ok := v.appNameToIDMap[key]
+	if !ok {
+		_, ok = v.clients[key]
+		if !ok {
+			return ErrInvalidAppID
+		}
+		appid = key
+	}
+
 	client, ok := v.clients[appid]
 	if !ok {
 		return ErrInvalidAppID

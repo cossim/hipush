@@ -8,7 +8,8 @@ require (
 	github.com/appleboy/go-fcm v0.1.6
 	github.com/cossim/go-hms-push v0.0.0-20240301034220-38310a1d80e5
 	github.com/cossim/go-meizu-push-sdk v0.0.0-20240308111828-f4255aaae3ac
-	github.com/cossim/vivo-push v0.0.0-20240312093754-a5c2baaa4799
+	github.com/cossim/vivo-push v0.0.0-20240318073734-1db94534d23b
+	github.com/cossim/xiaomi-push v0.0.0-20240318065904-a8b0b6ef1576
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-co-op/gocron/v2 v2.2.6
 	github.com/go-logr/logr v1.4.1
@@ -71,12 +72,12 @@ require (
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/arch v0.3.0 // indirect
-	golang.org/x/crypto v0.19.0 // indirect
+	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/exp v0.0.0-20231219180239-dc181d75b848 // indirect
-	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/net v0.22.0 // indirect
 	golang.org/x/oauth2 v0.17.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect

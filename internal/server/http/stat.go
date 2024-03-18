@@ -118,8 +118,15 @@ func (h *Handler) pushMessageStatHandler(c *gin.Context) {
 		return
 	}
 
+	var key string
+	if req.AppID != "" {
+		key = req.AppID
+	} else {
+		key = req.AppName
+	}
+
 	vps := &api.PushMessageStatsList{}
-	if err := service.GetTasksStatus(c, req.AppID, req.TaskID, vps); err != nil {
+	if err := service.GetTasksStatus(c, key, req.TaskID, vps); err != nil {
 		c.JSON(http.StatusBadRequest, Response{Code: http.StatusBadRequest, Msg: err.Error(), Data: nil})
 		return
 	}

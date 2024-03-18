@@ -122,7 +122,17 @@ func (x *XiaomiPushService) getTaskIDFromResponse(response *Response) (string, e
 	return taskid, nil
 }
 
-func (x *XiaomiPushService) GetTasksStatus(ctx context.Context, appid string, taskID []string, list push.TaskObjectList) error {
+func (x *XiaomiPushService) GetTasksStatus(ctx context.Context, key string, taskID []string, list push.TaskObjectList) error {
+	var appid string
+	appid, ok := x.appNameToIDMap[key]
+	if !ok {
+		_, ok = x.clients[key]
+		if !ok {
+			return ErrInvalidAppID
+		}
+		appid = key
+	}
+
 	client, ok := x.clients[appid]
 	if !ok {
 		return ErrInvalidAppID
