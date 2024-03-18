@@ -5,7 +5,8 @@ import "time"
 // XiaomiPushNotification
 // https://dev.mi.com/console/doc/detail?pId=2776#_0
 type XiaomiPushNotification struct {
-	AppID string `json:"app_id,omitempty"`
+	AppID   string `json:"app_id"`
+	AppName string `json:"app_name"`
 
 	// Tokens 对应regId列表
 	Tokens []string `json:"tokens" binding:"required"`

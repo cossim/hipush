@@ -7,6 +7,7 @@ import (
 	c "github.com/cossim/go-hms-push/push/config"
 	hClient "github.com/cossim/go-hms-push/push/core"
 	"github.com/cossim/go-hms-push/push/model"
+	"github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/pkg/consts"
 	"github.com/cossim/hipush/pkg/notify"
@@ -27,21 +28,24 @@ const (
 
 var (
 	// MaxConcurrentHuaweiPushes pool to limit the number of concurrent iOS pushes
-	MaxConcurrentHuaweiPushes = make(chan struct{}, 100)
+	MaxConcurrentHuaweiPushes                  = make(chan struct{}, 100)
+	_                         push.PushService = &HMSService{}
 )
 
 // HMSService 实现huawei推送，实现 PushService 接口
 type HMSService struct {
-	clients map[string]*hClient.HMSClient
-	status  *status.StateStorage
-	logger  logr.Logger
+	clients        map[string]*hClient.HMSClient
+	appNameToIDMap map[string]string
+	status         *status.StateStorage
+	logger         logr.Logger
 }
 
 func NewHMSService(cfg *config.Config, logger logr.Logger) *HMSService {
 	s := &HMSService{
-		clients: make(map[string]*hClient.HMSClient),
-		status:  status.StatStorage,
-		logger:  logger,
+		clients:        make(map[string]*hClient.HMSClient),
+		appNameToIDMap: make(map[string]string),
+		status:         status.StatStorage,
+		logger:         logger,
 	}
 
 	var (
@@ -50,11 +54,17 @@ func NewHMSService(cfg *config.Config, logger logr.Logger) *HMSService {
 	)
 
 	for _, v := range cfg.Huawei {
+		if !v.Enabled {
+			continue
+		}
 		if v.AuthUrl != "" {
 			AuthUrl = v.AuthUrl
 		}
 		if v.PushUrl != "" {
 			PushUrl = v.PushUrl
+		}
+		if v.AppID == "" || v.AppSecret == "" {
+			panic("invalid appid or appid push is not enabled")
 		}
 		client, err := hClient.NewHttpClient(&c.Config{
 			AppId:     v.AppID,
@@ -66,62 +76,84 @@ func NewHMSService(cfg *config.Config, logger logr.Logger) *HMSService {
 			panic(err)
 		}
 		s.clients[v.AppID] = client
+		if v.AppName != "" {
+			s.appNameToIDMap[v.AppName] = v.AppID
+		}
 	}
 
 	return s
 }
 
-func (h *HMSService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {
+func (h *HMSService) Send(ctx context.Context, request interface{}, opt ...push.SendOption) (*push.SendResponse, error) {
 	req, ok := request.(*notify.HMSPushNotification)
 	if !ok {
-		return errors.New("invalid request parameter")
+		return nil, errors.New("invalid request parameter")
 	}
 
-	so := &SendOptions{}
+	so := &push.SendOptions{}
 	so.ApplyOptions(opt)
 
+	var appid string
+	if req.AppID != "" {
+		appid = req.AppID
+	} else if req.AppName != "" {
+		appid, ok = h.appNameToIDMap[req.AppName]
+		if !ok {
+			return nil, ErrInvalidAppID
+		}
+	} else {
+		return nil, ErrInvalidAppID
+	}
+
 	if err := h.checkNotification(req); err != nil {
-		return err
+		return nil, err
 	}
 
 	notification, err := h.buildNotification(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if so.DryRun {
-		return nil
+		return nil, nil
 	}
 
 	send := func(ctx context.Context, token string) (*Response, error) {
-		return h.send(ctx, req.AppID, token, notification)
+		return h.send(ctx, appid, token, notification)
 	}
-	return RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
 
-	//for {
-	//	newTokens, err := h.send(ctx, req.AppID, req.Tokens, notification)
-	//	if err != nil {
-	//		log.Printf("send error => %v", err)
-	//		es = append(es, err)
-	//	}
-	//	// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
-	//	if len(newTokens) > 0 && retryCount < maxRetry {
-	//		retryCount++
-	//		req.Tokens = newTokens
-	//	} else {
-	//		break
-	//	}
-	//}
-	//
-	//var errorMsgs []string
-	//for _, err := range es {
-	//	errorMsgs = append(errorMsgs, err.Error())
-	//}
-	//if len(errorMsgs) > 0 {
-	//	return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
-	//}
-	//
-	//return nil
+	resp, err := RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
+	if err != nil {
+		return nil, err
+	}
+
+	taskid, err := h.getTaskIDFromResponse(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &push.SendResponse{TaskId: taskid}, nil
+}
+
+// getTaskIDFromResponse 从 Response 结构体中获取 RequestId
+func (h *HMSService) getTaskIDFromResponse(response *Response) (string, error) {
+	marshal, err := json.Marshal(response.Data)
+	if err != nil {
+		return "", err
+	}
+	var dataMap map[string]interface{}
+	if err := json.Unmarshal(marshal, &dataMap); err != nil {
+		return "", err
+	}
+	requestID, ok := dataMap["requestId"].(string)
+	if !ok {
+		return "", errors.New("RequestId 字段不是 string 类型")
+	}
+	return requestID, nil
+}
+
+func (h *HMSService) GetTasksStatus(ctx context.Context, appid string, taskID []string, obj push.TaskObjectList) error {
+	return nil
 }
 
 func (h *HMSService) send(ctx context.Context, appid string, token string, notification *model.MessageRequest) (*Response, error) {
@@ -150,6 +182,7 @@ func (h *HMSService) send(ctx context.Context, appid string, token string, notif
 		h.status.AddHuaweiSuccess(1)
 		resp.Code = Success
 		resp.Msg = res.Msg
+		resp.Data = res
 	}
 
 	return resp, err

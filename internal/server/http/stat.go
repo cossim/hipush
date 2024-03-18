@@ -2,8 +2,8 @@ package http
 
 import (
 	"github.com/cossim/hipush/api/http/v1/dto"
+	api "github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/pkg/consts"
-	"github.com/cossim/hipush/pkg/notify"
 	"github.com/cossim/hipush/pkg/status"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -103,7 +103,7 @@ func (h *Handler) pushStatHandler(c *gin.Context) {
 }
 
 func (h *Handler) pushMessageStatHandler(c *gin.Context) {
-	req := &dto.PushStatRequest{}
+	req := &dto.PushMessageStatRequest{}
 	if err := c.ShouldBindJSON(req); err != nil {
 		h.logger.Error(err, "failed to bind request")
 		c.JSON(http.StatusBadRequest, Response{Code: http.StatusBadRequest, Msg: err.Error(), Data: nil})
@@ -118,10 +118,10 @@ func (h *Handler) pushMessageStatHandler(c *gin.Context) {
 		return
 	}
 
-	vps := &notify.VivoPushStats{}
-	if err := service.GetNotifyStatus(c, req.AppID, req.NotifyID, vps); err != nil {
+	vps := &api.PushMessageStatsList{}
+	if err := service.GetTasksStatus(c, req.AppID, req.TaskID, vps); err != nil {
 		c.JSON(http.StatusBadRequest, Response{Code: http.StatusBadRequest, Msg: err.Error(), Data: nil})
 		return
 	}
-	c.JSON(http.StatusOK, Response{Code: http.StatusOK, Msg: "Get push message stat success", Data: vps})
+	c.JSON(http.StatusOK, Response{Code: http.StatusOK, Msg: "Get push message stat success", Data: vps.Get()})
 }

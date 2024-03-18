@@ -3,7 +3,8 @@ package notify
 // VivoPushNotification
 // https://dev.vivo.com.cn/documentCenter/doc/362#:~:text=%E6%8E%A5%E5%8F%A3%E5%AE%9A%E4%B9%89-,%E8%BE%93%E5%85%A5%E5%8F%82%E6%95%B0%EF%BC%9A,-intent%20uri
 type VivoPushNotification struct {
-	AppID     string `json:"app_id,omitempty"`
+	AppID     string `json:"app_id"`
+	AppName   string `json:"app_name"`
 	RequestId string `json:"request_id,omitempty"`
 
 	// NotifyID 每条消息在通知栏的唯一标识 可以用于覆盖消息
@@ -51,102 +52,4 @@ type VivoClickAction struct {
 
 	// Url 打开网页的地址
 	Url string `json:"url,omitempty"`
-}
-
-// VivoPushStats 表示 Vivo 推送统计信息
-type VivoPushStats struct {
-	Code        int    `json:"code"`         // 接口调用状态码
-	Msg         string `json:"msg"`          // 文字描述接口调用情况
-	NotifyID    int    `json:"notify_id"`    // 消息ID
-	Send        int    `json:"send"`         // 发送量
-	Receive     int    `json:"receive"`      // 到达量
-	Display     int    `json:"display"`      // 展示量
-	Click       int    `json:"click"`        // 点击量
-	ValidDevice int    `json:"valid_device"` // 有效设备量
-	ActualSend  int    `json:"actual_send"`  // 实际发送量
-}
-
-// GetCode 返回接口调用状态码
-func (v *VivoPushStats) GetCode() int {
-	return v.Code
-}
-
-// SetCode 设置接口调用状态码
-func (v *VivoPushStats) SetCode(code int) {
-	v.Code = code
-}
-
-// GetMsg 返回文字描述接口调用情况
-func (v *VivoPushStats) GetMsg() string {
-	return v.Msg
-}
-
-// SetMsg 设置文字描述接口调用情况
-func (v *VivoPushStats) SetMsg(msg string) {
-	v.Msg = msg
-}
-
-// GetNotifyID 返回消息ID
-func (v *VivoPushStats) GetNotifyID() int {
-	return v.NotifyID
-}
-
-// GetSend 返回发送量
-func (v *VivoPushStats) GetSend() int {
-	return v.Send
-}
-
-// SetSend 设置发送量
-func (v *VivoPushStats) SetSend(i int) {
-	v.Send = i
-}
-
-// GetReceive 返回到达量
-func (v *VivoPushStats) GetReceive() int {
-	return v.Receive
-}
-
-// SetReceive 设置到达量
-func (v *VivoPushStats) SetReceive(i int) {
-	v.Receive = i
-}
-
-// GetDisplay 返回展示量
-func (v *VivoPushStats) GetDisplay() int {
-	return v.Display
-}
-
-// SetDisplay 设置展示量
-func (v *VivoPushStats) SetDisplay(i int) {
-	v.Display = i
-}
-
-// GetClick 返回点击量
-func (v *VivoPushStats) GetClick() int {
-	return v.Click
-}
-
-// SetClick 设置点击量
-func (v *VivoPushStats) SetClick(i int) {
-	v.Click = i
-}
-
-// GetValidDevice 返回有效设备量
-func (v *VivoPushStats) GetValidDevice() int {
-	return v.ValidDevice
-}
-
-// SetValidDevice 设置有效设备量
-func (v *VivoPushStats) SetValidDevice(i int) {
-	v.ValidDevice = i
-}
-
-// GetActualSend 返回实际发送量
-func (v *VivoPushStats) GetActualSend() int {
-	return v.ActualSend
-}
-
-// SetActualSend 设置实际发送量
-func (v *VivoPushStats) SetActualSend(i int) {
-	v.ActualSend = i
 }

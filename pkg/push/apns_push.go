@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
+	"github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/pkg/consts"
 	"github.com/cossim/hipush/pkg/notify"
@@ -38,9 +40,10 @@ const (
 
 // APNsService 实现APNs推送，实现 PushService 接口
 type APNsService struct {
-	clients map[string]*apns2.Client
-	status  *status.StateStorage
-	logger  logr.Logger
+	clients        map[string]*apns2.Client
+	appNameToIDMap map[string]string
+	status         *status.StateStorage
+	logger         logr.Logger
 }
 
 func NewAPNsService(cfg *config.Config, logger logr.Logger) *APNsService {
@@ -50,43 +53,54 @@ func NewAPNsService(cfg *config.Config, logger logr.Logger) *APNsService {
 	//var certificateKey tls.Certificate
 
 	s := &APNsService{
-		clients: make(map[string]*apns2.Client),
-		status:  status.StatStorage,
-		logger:  logger,
+		clients:        make(map[string]*apns2.Client),
+		appNameToIDMap: make(map[string]string),
+		status:         status.StatStorage,
+		logger:         logger,
 	}
 
 	for _, v := range cfg.IOS {
-		if v.KeyPath != "" && v.Enabled {
-			ext = filepath.Ext(v.KeyPath)
-			switch ext {
-			case dotP12:
-				//certificateKey, err = certificate.FromP12File(v.KeyPath, v.Password)
-			case dotPEM:
-				//certificateKey, err = certificate.FromPemFile(v.KeyPath, v.Password)
-			case dotP8:
-				authKey, err = token.AuthKeyFromFile(v.KeyPath)
-				if v.KeyID == "" || v.TeamID == "" {
-					msg := "you should provide ios.KeyID and ios.TeamID for p8 token"
-					panic(msg)
-				}
-				token := &token.Token{
-					AuthKey: authKey,
-					// KeyID from developer account (Certificates, Identifiers & Profiles -> Keys)
-					KeyID: v.KeyID,
-					// TeamID from developer account (View Account -> Membership)
-					TeamID: v.TeamID,
-				}
-				client, err := s.newApnsTokenClient(v.Production, token)
-				if err != nil {
-					panic(err)
-				}
-				s.clients[v.AppID] = client
-			default:
-				err = errors.New("wrong certificate key extension")
+		if !v.Enabled {
+			continue
+		}
+
+		if v.KeyPath == "" || v.AppID == "" {
+			msg := "you should provide ios.KeyPath and ios.AppID"
+			panic(msg)
+		}
+
+		ext = filepath.Ext(v.KeyPath)
+		switch ext {
+		case dotP12:
+			//certificateKey, err = certificate.FromP12File(v.KeyPath, v.Password)
+		case dotPEM:
+			//certificateKey, err = certificate.FromPemFile(v.KeyPath, v.Password)
+		case dotP8:
+			authKey, err = token.AuthKeyFromFile(v.KeyPath)
+			if v.KeyID == "" || v.TeamID == "" || v.AppID == "" {
+				msg := "you should provide ios.KeyID and ios.TeamID for p8 token"
+				panic(msg)
 			}
+			token := &token.Token{
+				AuthKey: authKey,
+				// KeyID from developer account (Certificates, Identifiers & Profiles -> Keys)
+				KeyID: v.KeyID,
+				// TeamID from developer account (View Account -> Membership)
+				TeamID: v.TeamID,
+			}
+			client, err := s.newApnsTokenClient(v.Production, token)
 			if err != nil {
 				panic(err)
 			}
+			s.clients[v.AppID] = client
+			if v.AppName != "" {
+				s.appNameToIDMap[v.AppName] = v.AppID
+			}
+		default:
+			err = errors.New("wrong certificate key extension")
+		}
+		if err != nil {
+			panic(err)
 		}
 	}
 
@@ -136,32 +150,76 @@ var DialTLS = func(cfg *tls.Config) func(network, addr string) (net.Conn, error)
 	}
 }
 
-func (a *APNsService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {
+func (a *APNsService) Send(ctx context.Context, request interface{}, opt ...push.SendOption) (*push.SendResponse, error) {
 	req, ok := request.(*notify.ApnsPushNotification)
 	if !ok {
-		return errors.New("invalid request")
+		return nil, errors.New("invalid request")
 	}
 
-	so := &SendOptions{}
+	so := &push.SendOptions{}
 	so.ApplyOptions(opt)
 
 	if err := a.checkNotification(req); err != nil {
-		return err
+		return nil, err
 	}
 
 	notification, err := a.buildNotification(req)
 	if err != nil {
-		return err
+		return nil, err
+	}
+
+	var appid string
+	if req.AppID != "" {
+		appid = req.AppID
+	} else if req.AppName != "" {
+		appid, ok = a.appNameToIDMap[req.AppName]
+		if !ok {
+			return nil, ErrInvalidAppID
+		}
+	} else {
+		return nil, ErrInvalidAppID
 	}
 
 	if so.DryRun {
-		return nil
+		return nil, nil
 	}
 
 	send := func(ctx context.Context, token string) (*Response, error) {
-		return a.send(req.AppID, token, notification)
+		return a.send(appid, token, notification)
 	}
-	return RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
+
+	resp, err := RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
+	if err != nil {
+		return nil, err
+	}
+
+	taskid, err := a.getTaskIDFromResponse(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &push.SendResponse{TaskId: taskid}, nil
+}
+
+// getTaskIDFromResponse 从 Response 结构体中获取 RequestId
+func (a *APNsService) getTaskIDFromResponse(response *Response) (string, error) {
+	marshal, err := json.Marshal(response.Data)
+	if err != nil {
+		return "", err
+	}
+	var dataMap map[string]interface{}
+	if err := json.Unmarshal(marshal, &dataMap); err != nil {
+		return "", err
+	}
+	requestID, ok := dataMap["ApnsID"].(string)
+	if !ok {
+		return "", errors.New("RequestId 字段不是 string 类型")
+	}
+	return requestID, nil
+}
+
+func (a *APNsService) GetTasksStatus(ctx context.Context, appid string, taskID []string, obj push.TaskObjectList) error {
+	return nil
 }
 
 func (a *APNsService) MapPushRequestToApnsPushNotification(req PushRequest) (*notify.ApnsPushNotification, error) {
@@ -279,6 +337,7 @@ func (a *APNsService) send(appid string, token string, notification *apns2.Notif
 		a.status.AddIosSuccess(1)
 		resp.Code = Success
 		resp.Msg = res.Reason
+		resp.Data = res
 	}
 
 	return resp, err

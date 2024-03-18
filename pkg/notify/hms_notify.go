@@ -4,6 +4,7 @@ import "github.com/cossim/go-hms-push/push/model"
 
 type HMSPushNotification struct {
 	AppID          string      `json:"app_id,omitempty"`
+	AppName        string      `json:"app_name,omitempty"`
 	Tokens         []string    `json:"tokens" binding:"required"`
 	Topic          string      `json:"topic,omitempty"`
 	Condition      string      `json:"condition,omitempty"`

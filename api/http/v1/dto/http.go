@@ -4,7 +4,10 @@ package dto
 type PushRequest struct {
 	// AppID 应用程序标识
 	// ios capacitor.config文件中的appId 例如com.hitosea.apptest
-	AppID string `json:"app_id" binding:"required"`
+	AppID string `json:"app_id"`
+
+	// appName 应用名称
+	AppName string `json:"app_name"`
 
 	// Platform 推送平台 consts.Platform
 	Platform string `json:"platform" binding:"required"`
@@ -23,9 +26,6 @@ type PushRequest struct {
 
 // PushOption 表示推送选项的结构体
 type PushOption struct {
-	// Development 测试环境推送
-	Development bool `json:"development,omitempty"`
-
 	// DryRun 只进行数据校验不实际推送，数据校验成功即为成功
 	DryRun bool `json:"dry_run,omitempty"`
 
@@ -36,16 +36,15 @@ type PushOption struct {
 	RetryInterval int `json:"retry_interval,omitempty"`
 }
 
-type PushStatRequest struct {
+type PushMessageStatRequest struct {
 	// Platform 平台名称 consts.Platform
-	Platform string `json:"platform"`
+	Platform string `json:"platform" binding:"required"`
 
-	// Method 推送方法 http、grpc
-	Method string `json:"method"`
+	AppName string `json:"app_name"`
 
-	AppID string `json:"app_id" binding:"required"`
+	AppID string `json:"app_id"`
 
-	NotifyID string `json:"notify_id" binding:"required"`
+	TaskID []string `json:"task_id" binding:"required"`
 }
 
 // PushStat 每个推送平台的推送状态

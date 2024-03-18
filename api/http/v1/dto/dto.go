@@ -5,22 +5,10 @@ import (
 	"time"
 )
 
-// Action 枚举表示点击行为类型
-type Action int
-
-const (
-	// ActionTypeOpenCustomPage 表示打开应用自定义页面
-	ActionTypeOpenCustomPage Action = iota + 1
-
-	// ActionTypeOpenURL 表示点击后打开特定URL
-	ActionTypeOpenURL
-
-	// ActionTypeOpenApp 表示点击后打开应用
-	ActionTypeOpenApp
-)
-
 type HuaweiPushRequestData struct {
-	Foreground  bool              `json:"foreground,omitempty"`
+	Foreground bool `json:"foreground,omitempty"`
+	// Development 测试环境推送
+	Development bool              `json:"development,omitempty"`
 	TTL         string            `json:"ttl,omitempty"`
 	Type        string            `json:"type,omitempty"`
 	Title       string            `json:"title"`
@@ -71,7 +59,9 @@ type Sound struct {
 
 type VivoPushRequestData struct {
 	Foreground bool `json:"foreground,omitempty"`
-	TTL        int  `json:"ttl,omitempty"`
+	// Development 测试环境推送
+	Development bool `json:"development,omitempty"`
+	TTL         int  `json:"ttl,omitempty"`
 	// NotifyType 通知类型 1:无，2:响铃，3:振动，4:响铃和振动
 	NotifyType  int               `json:"notify_type,omitempty"`
 	NotifyID    int               `json:"notify_id,omitempty"`

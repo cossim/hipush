@@ -17,7 +17,6 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/sideshow/apns2 v0.23.0
 	github.com/thoas/stats v0.0.0-20190407194641-965cb2de1678
-	github.com/yilee/xiaomi-push v0.0.0-20170213073944-562fbb07388e
 	go.uber.org/zap v1.27.0
 	google.golang.org/api v0.169.0
 	google.golang.org/grpc v1.62.1

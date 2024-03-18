@@ -8,7 +8,8 @@ import (
 )
 
 type ApnsPushNotification struct {
-	AppID string `json:"app_id,omitempty"`
+	AppID   string `json:"app_id,omitempty"`
+	AppName string `json:"app_name,omitempty"`
 
 	Tokens            []string               `json:"tokens" binding:"required"`
 	Priority          string                 `json:"priority,omitempty"`

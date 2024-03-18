@@ -2,6 +2,7 @@ package notify
 
 type HonorPushNotification struct {
 	AppID    string   `json:"app_id,omitempty"`
+	AppName  string   `json:"app_name,omitempty"`
 	Tokens   []string `json:"tokens" binding:"required"`
 	Title    string   `json:"title,omitempty"`
 	Content  string   `json:"content,omitempty"`

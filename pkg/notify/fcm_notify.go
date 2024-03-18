@@ -2,6 +2,7 @@ package notify
 
 type FCMPushNotification struct {
 	AppID            string   `json:"app_id,omitempty"`
+	AppName          string   `json:"app_name,omitempty"`
 	Tokens           []string `json:"tokens" binding:"required"`
 	Topic            string   `json:"topic,omitempty"`
 	Priority         string   `json:"priority,omitempty"`
@@ -17,7 +18,6 @@ type FCMPushNotification struct {
 	Badge            *int     `json:"badge,omitempty"`
 	ContentAvailable bool     `json:"content_available,omitempty"`
 	MutableContent   bool     `json:"mutable_content"`
-	DryRun           bool     `json:"dry_run,omitempty"`
 	Data             D        `json:"data,omitempty"`
 	Apns             D        `json:"apns,omitempty"`
 }

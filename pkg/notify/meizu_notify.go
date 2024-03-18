@@ -3,7 +3,8 @@ package notify
 // MeizuPushNotification
 // https://github.com/MEIZUPUSH/PushAPI/blob/master/README.md
 type MeizuPushNotification struct {
-	AppID string `json:"app_id,omitempty"`
+	AppID   string `json:"app_id"`
+	AppName string `json:"app_name"`
 
 	// Tokens 对应pushId列表
 	Tokens []string `json:"tokens" binding:"required"`

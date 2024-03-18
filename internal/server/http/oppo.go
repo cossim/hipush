@@ -3,9 +3,9 @@ package http
 import (
 	"encoding/json"
 	"github.com/cossim/hipush/api/http/v1/dto"
+	"github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/pkg/consts"
 	"github.com/cossim/hipush/pkg/notify"
-	"github.com/cossim/hipush/pkg/push"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -32,6 +32,7 @@ func (h *Handler) handleOppoPush(c *gin.Context, req *dto.PushRequest) error {
 
 	rr := &notify.OppoPushNotification{
 		AppID:       req.AppID,
+		AppName:     req.AppName,
 		Tokens:      req.Token,
 		Title:       r.Title,
 		Subtitle:    r.Subtitle,
@@ -44,15 +45,16 @@ func (h *Handler) handleOppoPush(c *gin.Context, req *dto.PushRequest) error {
 			Retry:  req.Option.Retry,
 		},
 	}
-	if err := service.Send(c, req.AppID, rr, &push.SendOptions{
+	resp, err := service.Send(c, rr, &push.SendOptions{
 		DryRun:        req.Option.DryRun,
 		Retry:         req.Option.Retry,
 		RetryInterval: req.Option.RetryInterval,
-	}); err != nil {
+	})
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, Response{Code: http.StatusBadRequest, Msg: err.Error(), Data: nil})
 		return err
 	}
 
-	c.JSON(http.StatusOK, Response{Code: http.StatusOK, Msg: "Push notification send success", Data: nil})
+	c.JSON(http.StatusOK, Response{Code: http.StatusOK, Msg: "Push notification send success", Data: resp})
 	return nil
 }

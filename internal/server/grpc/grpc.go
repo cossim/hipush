@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cossim/hipush/api/grpc/v1"
+	push2 "github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/internal/factory"
 	"github.com/cossim/hipush/pkg/consts"
@@ -86,10 +87,11 @@ func (h *Handler) Push(ctx context.Context, req *v1.PushRequest) (*v1.PushRespon
 		return nil, err
 	}
 
-	if err := service.Send(ctx, req.AppID, r, &push.SendOptions{
+	_, err = service.Send(ctx, r, &push2.SendOptions{
 		DryRun: req.Option.DryRun,
 		Retry:  int(req.Option.Retry),
-	}); err != nil {
+	})
+	if err != nil {
 		status.StatStorage.AddGrpcFailed(1)
 		h.logger.Error(err, "failed to send push")
 		return resp, err
@@ -132,6 +134,7 @@ func (h *Handler) getPushRequest(req *v1.PushRequest) (push.PushRequest, error) 
 	}
 
 	return &notify.ApnsPushNotification{
+		AppID:            req.AppID,
 		ApnsID:           req.AppID,
 		Tokens:           req.Tokens,
 		Title:            req.Title,

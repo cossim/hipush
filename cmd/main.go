@@ -51,14 +51,14 @@ func main() {
 
 	pushServiceFactory := factory.NewPushServiceFactory()
 	if err := pushServiceFactory.Register(
-		//pushServiceFactory.WithPushService(push.NewAPNsService(cfg, logger)),
-		//pushServiceFactory.WithPushService(push.NewFCMService(cfg, logger)),
-		//pushServiceFactory.WithPushService(push.NewHMSService(cfg, logger)),
-		//pushServiceFactory.WithPushService(push.NewXiaomiService(cfg, logger)),
-		//pushServiceFactory.WithPushService(push.NewOppoService(cfg, logger)),
+		pushServiceFactory.WithPushService(push.NewAPNsService(cfg, logger)),
+		pushServiceFactory.WithPushService(push.NewFCMService(cfg, logger)),
+		pushServiceFactory.WithPushService(push.NewHMSService(cfg, logger)),
+		pushServiceFactory.WithPushService(push.NewXiaomiService(cfg, logger)),
+		pushServiceFactory.WithPushService(push.NewOppoService(cfg, logger)),
 		pushServiceFactory.WithPushService(push.NewVivoService(cfg, logger, scheduler)),
-		//pushServiceFactory.WithPushService(push.NewMeizuService(cfg, logger)),
-		//pushServiceFactory.WithPushService(push.NewHonorService(cfg, logger)),
+		pushServiceFactory.WithPushService(push.NewMeizuService(cfg, logger)),
+		pushServiceFactory.WithPushService(push.NewHonorService(cfg, logger)),
 	); err != nil {
 		panic(err)
 	}

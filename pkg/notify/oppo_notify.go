@@ -1,7 +1,8 @@
 package notify
 
 type OppoPushNotification struct {
-	AppID     string `json:"app_id,omitempty"`
+	AppID     string `json:"app_id"`
+	AppName   string `json:"app_name"`
 	RequestId string `json:"request_id,omitempty"`
 	// Tokens 对应regId列表
 	Tokens []string `json:"tokens" binding:"required"`

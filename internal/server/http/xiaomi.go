@@ -3,9 +3,9 @@ package http
 import (
 	"encoding/json"
 	"github.com/cossim/hipush/api/http/v1/dto"
+	"github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/pkg/consts"
 	"github.com/cossim/hipush/pkg/notify"
-	"github.com/cossim/hipush/pkg/push"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -30,10 +30,11 @@ func (h *Handler) handleXiaomiPush(c *gin.Context, req *dto.PushRequest) error {
 		return err
 	}
 
-	h.logger.Info("Handling push request", "platform", req.Platform, "appID", req.AppID, "tokens", req.Token, "req", r)
+	h.logger.Info("Handling push request", "platform", req.Platform, "appID", req.AppID, "appName", req.AppName, "tokens", req.Token, "req", r)
 
 	rr := &notify.XiaomiPushNotification{
 		AppID:         req.AppID,
+		AppName:       req.AppName,
 		Tokens:        req.Token,
 		Title:         r.Title,
 		Content:       r.Content,
@@ -43,15 +44,16 @@ func (h *Handler) handleXiaomiPush(c *gin.Context, req *dto.PushRequest) error {
 		IsScheduled:   r.IsScheduled,
 		ScheduledTime: r.ScheduledTime,
 	}
-	if err := service.Send(c, req.AppID, rr, &push.SendOptions{
+	resp, err := service.Send(c, rr, &push.SendOptions{
 		DryRun:        req.Option.DryRun,
 		Retry:         req.Option.Retry,
 		RetryInterval: req.Option.RetryInterval,
-	}); err != nil {
+	})
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, Response{Code: http.StatusBadRequest, Msg: err.Error(), Data: nil})
 		return err
 	}
 
-	c.JSON(http.StatusOK, Response{Code: http.StatusOK, Msg: "Push notification send success", Data: nil})
+	c.JSON(http.StatusOK, Response{Code: http.StatusOK, Msg: "Push notification send success", Data: resp})
 	return nil
 }

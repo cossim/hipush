@@ -11,7 +11,7 @@ type iOSAppConfig struct {
 	MaxRetry            int    `yaml:"max_retry"`
 	Enabled             bool   `yaml:"enabled"`
 	Production          bool   `yaml:"production"`
-	AppName             string `json:"app_name"`
+	AppName             string `yaml:"app_name"`
 	AppID               string `yaml:"app_id"`
 	KeyPath             string `yaml:"key_path"`
 	KeyType             string `yaml:"key_type"`
@@ -22,7 +22,7 @@ type iOSAppConfig struct {
 
 type HuaweiAppConfig struct {
 	Enabled   bool   `yaml:"enabled"`
-	AppName   string `json:"app_name"`
+	AppName   string `yaml:"app_name"`
 	AppID     string `yaml:"app_id"`
 	AppSecret string `yaml:"app_secret"`
 	AuthUrl   string `yaml:"auth_url"`
@@ -32,7 +32,7 @@ type HuaweiAppConfig struct {
 
 type VivoAppConfig struct {
 	Enabled   bool   `yaml:"enabled"`
-	AppName   string `json:"app_name"`
+	AppName   string `yaml:"app_name"`
 	AppID     string `yaml:"app_id"`
 	AppKey    string `yaml:"app_key"`
 	AppSecret string `yaml:"app_secret"`
@@ -41,7 +41,7 @@ type VivoAppConfig struct {
 
 type OppoAppConfig struct {
 	Enabled   bool   `yaml:"enabled"`
-	AppName   string `json:"app_name"`
+	AppName   string `yaml:"app_name"`
 	AppID     string `yaml:"app_id"`
 	AppKey    string `yaml:"app_key"`
 	AppSecret string `yaml:"app_secret"`
@@ -50,7 +50,7 @@ type OppoAppConfig struct {
 
 type AndroidAppConfig struct {
 	Enabled  bool   `yaml:"enabled"`
-	AppName  string `json:"app_name"`
+	AppName  string `yaml:"app_name"`
 	AppID    string `yaml:"app_id"`
 	AppKey   string `yaml:"app_key"`
 	KeyPath  string `yaml:"key_path"`
@@ -59,7 +59,7 @@ type AndroidAppConfig struct {
 
 type XiaomiAppConfig struct {
 	Enabled   bool     `yaml:"enabled"`
-	AppName   string   `json:"app_name"`
+	AppName   string   `yaml:"app_name"`
 	AppID     string   `yaml:"app_id"`
 	AppSecret string   `yaml:"app_secret"`
 	Package   []string `yaml:"package"`
@@ -76,7 +76,7 @@ type MeizuAppConfig struct {
 
 type HonorAppConfig struct {
 	Enabled      bool   `yaml:"enabled"`
-	AppName      string `json:"app_name"`
+	AppName      string `yaml:"app_name"`
 	AppID        string `yaml:"app_id"`
 	ClientID     string `yaml:"client_id"`
 	ClientSecret string `yaml:"client_secret"`

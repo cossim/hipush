@@ -5,6 +5,8 @@ import (
 	"errors"
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/messaging"
+	"fmt"
+	"github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/pkg/consts"
 	"github.com/cossim/hipush/pkg/notify"
@@ -17,46 +19,31 @@ import (
 
 var (
 	// MaxConcurrentAndroidPushes pool to limit the number of concurrent iOS pushes
-	MaxConcurrentAndroidPushes = make(chan struct{}, 100)
+	MaxConcurrentAndroidPushes                  = make(chan struct{}, 100)
+	_                          push.PushService = &FCMService{}
 )
 
 // FCMService 谷歌安卓推送，实现了 PushService 接口
 type FCMService struct {
-	clients map[string]*messaging.Client
-	status  *status.StateStorage
-	logger  logr.Logger
+	clients        map[string]*messaging.Client
+	appNameToIDMap map[string]string
+	status         *status.StateStorage
+	logger         logr.Logger
 }
-
-//func NewFCMService(cfg *config.Config) (*FCMService, error) {
-//	s := &FCMService{
-//		clients: make(map[string]*fcm.Client),
-//	}
-//	for _, v := range cfg.Android {
-//		if v.AppKey == "" && v.Enabled {
-//			return nil, errors.New("you should provide android.AppKey")
-//		}
-//		client, err := fcm.NewClient(v.AppKey)
-//		if err != nil {
-//			return nil, err
-//		}
-//		s.clients[v.AppID] = client
-//	}
-//
-//	return s, nil
-//}
 
 func NewFCMService(cfg *config.Config, logger logr.Logger) *FCMService {
 	s := &FCMService{
-		clients: make(map[string]*messaging.Client),
-		status:  status.StatStorage,
-		logger:  logger,
+		clients:        make(map[string]*messaging.Client),
+		appNameToIDMap: make(map[string]string),
+		status:         status.StatStorage,
+		logger:         logger,
 	}
 
 	for _, v := range cfg.Android {
 		if !v.Enabled {
 			continue
 		}
-		if v.Enabled && v.KeyPath == "" {
+		if v.KeyPath == "" || v.AppID == "" {
 			panic("push not enabled or misconfigured")
 		}
 
@@ -71,58 +58,62 @@ func NewFCMService(cfg *config.Config, logger logr.Logger) *FCMService {
 			panic(err)
 		}
 		s.clients[v.AppID] = client
+		fmt.Println("v.AppName => ", v.AppName)
+		if v.AppName != "" {
+			s.appNameToIDMap[v.AppName] = v.AppID
+		}
 	}
 
 	return s
 }
 
-func (f *FCMService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {
+func (f *FCMService) Send(ctx context.Context, request interface{}, opt ...push.SendOption) (*push.SendResponse, error) {
 	req, ok := request.(*notify.FCMPushNotification)
 	if !ok {
-		return errors.New("invalid request")
+		return nil, errors.New("invalid request")
 	}
 
-	so := &SendOptions{}
+	so := &push.SendOptions{}
 	so.ApplyOptions(opt)
 
+	fmt.Println("req.AppName => ", req.AppName)
+
+	var appid string
+	if req.AppID != "" {
+		appid = req.AppID
+	} else if req.AppName != "" {
+		appid, ok = f.appNameToIDMap[req.AppName]
+		if !ok {
+			return nil, ErrInvalidAppID
+		}
+	} else {
+		return nil, ErrInvalidAppID
+	}
+
 	if err := f.checkNotification(req); err != nil {
-		return err
+		return nil, err
 	}
 
 	notification := f.buildAndroidNotification(req)
 
 	if so.DryRun {
-		return nil
+		return nil, nil
 	}
 
 	send := func(ctx context.Context, token string) (*Response, error) {
-		return f.send(ctx, req.AppID, token, notification)
+		return f.send(ctx, appid, token, notification)
 	}
-	return RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
 
-	//for {
-	//	newTokens, err := f.send(ctx, req.AppID, req.Tokens, notification)
-	//	if err != nil {
-	//		log.Printf("send error => %v", err)
-	//		es = append(es, err)
-	//	}
-	//	// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
-	//	if len(newTokens) > 0 && retryCount < maxRetry {
-	//		retryCount++
-	//		req.Tokens = newTokens
-	//	} else {
-	//		break
-	//	}
-	//}
-	//
-	//var errorMsgs []string
-	//for _, err := range es {
-	//	errorMsgs = append(errorMsgs, err.Error())
-	//}
-	//if len(errorMsgs) > 0 {
-	//	return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
-	//}
-	//return nil
+	retrySend, err := RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
+	if err != nil {
+		return nil, err
+	}
+
+	return &push.SendResponse{TaskId: retrySend.Data.(string)}, nil
+}
+
+func (f *FCMService) GetTasksStatus(ctx context.Context, appid string, taskID []string, obj push.TaskObjectList) error {
+	return nil
 }
 
 func (f *FCMService) send(ctx context.Context, appid string, token string, notification *messaging.Message) (*Response, error) {
@@ -150,6 +141,7 @@ func (f *FCMService) send(ctx context.Context, appid string, token string, notif
 		f.status.AddAndroidSuccess(1)
 		resp.Code = Success
 		resp.Msg = res
+		resp.Data = res
 	}
 
 	return resp, err

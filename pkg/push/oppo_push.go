@@ -2,8 +2,11 @@ package push
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	op "github.com/316014408/oppo-push"
+	"github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/pkg/consts"
 	"github.com/cossim/hipush/pkg/notify"
@@ -18,79 +21,111 @@ var (
 
 // OppoService 实现oppo推送，实现 PushService 接口
 type OppoService struct {
-	clients map[string]*op.OppoPush
-	status  *status.StateStorage
-	logger  logr.Logger
+	clients        map[string]*op.OppoPush
+	appNameToIDMap map[string]string
+	status         *status.StateStorage
+	logger         logr.Logger
 }
 
 func NewOppoService(cfg *config.Config, logger logr.Logger) *OppoService {
 	s := &OppoService{
-		clients: map[string]*op.OppoPush{},
-		status:  status.StatStorage,
-		logger:  logger,
+		clients:        map[string]*op.OppoPush{},
+		appNameToIDMap: make(map[string]string),
+		status:         status.StatStorage,
+		logger:         logger,
 	}
 
 	for _, v := range cfg.Oppo {
-		if !v.Enabled || v.Enabled && (v.AppID == "" || v.AppKey == "" || v.AppSecret == "") {
+		if !v.Enabled {
+			continue
+		}
+		if v.AppID == "" || v.AppKey == "" || v.AppSecret == "" {
 			panic("push not enabled or misconfigured")
 		}
 		client := op.NewClient(v.AppKey, v.AppSecret)
 		s.clients[v.AppID] = client
+		if v.AppName != "" {
+			s.appNameToIDMap[v.AppName] = v.AppID
+		}
 	}
 
 	return s
 }
 
-func (o *OppoService) Send(ctx context.Context, request interface{}, opt ...SendOption) error {
+func (o *OppoService) Send(ctx context.Context, request interface{}, opt ...push.SendOption) (*push.SendResponse, error) {
 	req, ok := request.(*notify.OppoPushNotification)
 	if !ok {
-		return errors.New("invalid request")
+		return nil, errors.New("invalid request")
 	}
 
-	so := &SendOptions{}
+	so := &push.SendOptions{}
 	so.ApplyOptions(opt)
 
 	if err := o.checkNotification(req); err != nil {
-		return err
+		return nil, err
 	}
 
 	notification, err := o.buildNotification(req)
 	if err != nil {
-		return err
+		return nil, err
+	}
+
+	var appid string
+	if req.AppID != "" {
+		appid = req.AppID
+	} else if req.AppName != "" {
+		appid, ok = o.appNameToIDMap[req.AppName]
+		if !ok {
+			return nil, ErrInvalidAppID
+		}
+	} else {
+		return nil, ErrInvalidAppID
 	}
 
 	if so.DryRun {
-		return nil
+		return nil, nil
 	}
 
 	send := func(ctx context.Context, token string) (*Response, error) {
-		return o.send(req.AppID, token, notification)
+		return o.send(appid, token, notification)
 	}
-	return RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
 
-	//for {
-	//	newTokens, err := o.send(req.AppID, req.Tokens, notification)
-	//	if err != nil {
-	//		log.Printf("send error => %v", err)
-	//		es = append(es, err)
-	//	}
-	//	// 如果有重试的 Token，并且未达到最大重试次数，则进行重试
-	//	if len(newTokens) > 0 && retryCount < maxRetry {
-	//		retryCount++
-	//		req.Tokens = newTokens
-	//	} else {
-	//		break
-	//	}
-	//}
-	//
-	//var errorMsgs []string
-	//for _, err := range es {
-	//	errorMsgs = append(errorMsgs, err.Error())
-	//}
-	//if len(errorMsgs) > 0 {
-	//	return fmt.Errorf("%s", strings.Join(errorMsgs, ", "))
-	//}
-	//return nil
+	resp, err := RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
+	if err != nil {
+		return nil, err
+	}
+
+	taskid, err := o.getTaskIDFromResponse(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &push.SendResponse{TaskId: taskid}, nil
+}
+
+// getTaskIDFromResponse 从 Response 结构体中获取 RequestId
+func (o *OppoService) getTaskIDFromResponse(response *Response) (string, error) {
+	marshal, err := json.Marshal(response.Data)
+	if err != nil {
+		return "", err
+	}
+	var t map[string]interface{}
+	if err := json.Unmarshal(marshal, &t); err != nil {
+		return "", err
+	}
+	data, ok := t["data"].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("data 字段不是 map[string]interface{} 类型")
+	}
+	taskid, ok := data["messageId"].(string)
+	if !ok {
+		return "", fmt.Errorf("id 字段不是 string 类型")
+	}
+	return taskid, nil
+}
+
+func (o *OppoService) GetTasksStatus(ctx context.Context, appid string, taskID []string, obj push.TaskObjectList) error {
+	return nil
 }
 
 func (o *OppoService) send(appID string, token string, notification *op.Message) (*Response, error) {
@@ -119,6 +154,7 @@ func (o *OppoService) send(appID string, token string, notification *op.Message)
 		o.status.AddOppoSuccess(1)
 		resp.Code = Success
 		resp.Msg = res.Message
+		resp.Data = res
 	}
 
 	return resp, err
