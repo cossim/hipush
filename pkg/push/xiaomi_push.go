@@ -77,13 +77,6 @@ func (x *XiaomiPushService) Send(ctx context.Context, request interface{}, opt .
 		return nil, err
 	}
 
-	marshal, err := json.Marshal(notification)
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Println("marshal => ", string(marshal))
-
 	var appid string
 	if req.AppID != "" {
 		appid = req.AppID
