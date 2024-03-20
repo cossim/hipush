@@ -40,12 +40,22 @@ func NewHonorService(cfg *config.Config, logger logr.Logger) *HonorService {
 		if !v.Enabled {
 			continue
 		}
-		if v.AppID == "" || v.ClientID == "" || v.ClientSecret == "" {
+		if v.ClientID == "" || v.ClientSecret == "" {
 			panic("push not enabled or misconfigured")
 		}
-		s.clients[v.AppID] = hClient.NewHonorPush(v.ClientID, v.ClientSecret)
+		client := hClient.NewHonorPush(v.ClientID, v.ClientSecret)
+		if v.AppID == "" {
+			s.clients[v.AppName] = client
+		} else {
+			s.clients[v.AppID] = client
+		}
+
 		if v.AppName != "" {
-			s.appNameToIDMap[v.AppName] = v.AppID
+			if v.AppID == "" {
+				s.appNameToIDMap[v.AppName] = v.AppName
+			} else {
+				s.appNameToIDMap[v.AppName] = v.AppID
+			}
 		}
 	}
 

@@ -2,6 +2,8 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/cossim/hipush/api/http/v1/dto"
 	"github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/pkg/notify"
@@ -32,26 +34,37 @@ func (h *Handler) handleIOSPush(c *gin.Context, req *dto.PushRequest) error {
 
 	h.logger.Info("Handling push request", "platform", req.Platform, "appID", req.AppID, "tokens", req.Token, "req", r)
 
-	rr := &notify.ApnsPushNotification{
-		//Retry:      5,
-		AppID:   req.AppID,
-		AppName: req.AppName,
+	var topic = r.Topic
 
+	if req.AppID == "" && r.Topic == "" {
+		msg := errors.New("one of AppID and Topic cannot be empty")
+		c.JSON(http.StatusBadRequest, Response{Code: http.StatusBadRequest, Msg: msg.Error(), Data: nil})
+		return msg
+	}
+
+	if r.Topic == "" {
+		topic = req.AppID
+	}
+
+	fmt.Println("topic => ", topic)
+
+	rr := &notify.ApnsPushNotification{
+		AppID:            req.AppID,
+		AppName:          req.AppName,
 		Tokens:           req.Token,
 		Title:            r.Title,
-		Topic:            req.AppID,
-		Content:          r.Message,
-		ApnsID:           req.AppID,
+		Topic:            topic,
+		Content:          r.Content,
+		ApnsID:           r.ApnsID,
 		Sound:            r.Sound,
-		Production:       r.Production,
 		Development:      r.Development,
 		MutableContent:   r.MutableContent,
 		CollapseID:       r.CollapseID,
 		ContentAvailable: r.ContentAvailable,
 		Priority:         r.Priority,
 		Data:             r.Data,
-		Badge:            r.Badge,
-		Expiration:       nil,
+		Badge:            &r.Badge,
+		Expiration:       &r.TTL,
 	}
 	resp, err := service.Send(c, rr, &push.SendOptions{
 		DryRun:        req.Option.DryRun,

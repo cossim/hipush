@@ -36,10 +36,10 @@ func (h *Handler) handleOppoPush(c *gin.Context, req *dto.PushRequest) error {
 		Tokens:      req.Token,
 		Title:       r.Title,
 		Subtitle:    r.Subtitle,
-		Message:     r.Message,
+		Message:     r.Content,
 		Data:        r.Data,
 		ClickAction: &r.ClickAction,
-		TTL:         0,
+		TTL:         r.TTL,
 		Option: notify.PushOption{
 			DryRun: req.Option.DryRun,
 			Retry:  req.Option.Retry,

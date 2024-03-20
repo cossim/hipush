@@ -2,7 +2,7 @@ package http
 
 import (
 	"encoding/json"
-	"github.com/cossim/go-hms-push/push/model"
+	"fmt"
 	"github.com/cossim/hipush/api/http/v1/dto"
 	"github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/pkg/consts"
@@ -33,30 +33,20 @@ func (h *Handler) handleHuaweiPush(c *gin.Context, req *dto.PushRequest) error {
 
 	h.logger.Info("Handling push request", "platform", req.Platform, "appID", req.AppID, "tokens", req.Token, "req", r)
 
+	fmt.Println("title => ", r.Title)
+
 	rr := &notify.HMSPushNotification{
 		AppID:       req.AppID,
 		AppName:     req.AppName,
 		Tokens:      req.Token,
 		Development: r.Development,
-		MessageRequest: &model.MessageRequest{
-			Message: &model.Message{
-				Notification: &model.Notification{
-					Title: r.Title,
-					Body:  r.Message,
-				},
-				Android: &model.AndroidConfig{
-					Notification: &model.AndroidNotification{
-						Title: r.Title,
-						Body:  r.Message,
-						Badge: &model.BadgeNotification{
-							AddNum: r.Badge.AddNum,
-							SetNum: r.Badge.SetNum,
-							Class:  r.Badge.Class,
-						},
-					},
-				},
-				Token: req.Token,
-			},
+		Title:       r.Title,
+		Content:     r.Content,
+		Category:    r.Category,
+		Badge: notify.BadgeNotification{
+			AddNum:     r.Badge.AddNum,
+			SetNum:     r.Badge.SetNum,
+			BadgeClass: r.Badge.Class,
 		},
 	}
 	resp, err := service.Send(c, rr, &push.SendOptions{

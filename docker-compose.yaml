@@ -7,10 +7,8 @@ services:
     volumes:
       - ./config.yaml:/config/config.yaml
       # 如果启用了ios推送，需要将推送证书挂载到容器中
-      #- /Users/macos-15/Desktop/key/AuthKey_UU2D9Z4ANF.p8:/config/key/AuthKey_UU2D9Z4ANF.p8
-    command:
-      - "-config"
-      - "/config/config.yaml"
+      #- ./AuthKey_xxx.p8:/config/key/AuthKey_xxx.p8
+    command: -config /config/config.yaml
     ports:
       - "7070:7070"
       - "7071:7071"

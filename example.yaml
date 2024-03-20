@@ -1,13 +1,3 @@
-English | [简体中文](README-cn.md)
-
-
-# Hipush
-
-Hipush is a push server that integrates push notifications for multiple mobile platforms and supports HTTP and GRPC interfaces.
-## Configuration
-
-See the default [YAML config example](example.yaml):
-```yaml
 http:
   enabled: true
   address: "0.0.0.0"
@@ -112,60 +102,3 @@ honor:
     client_id: ""
     client_secret: ""
     max_retry: 5
-```
-
-## Deploy
-
-Running the Project Directly
-```bash
-go run cmd/main.go -config xxx.yaml
-```
-
-Running the Project Using Docker
-```bash
-docker run -d --name hipush \
-  -v "$(pwd)/config.yaml:/config/config.yaml" \
-  -p 7070:7070 \
-  -p 7071:7071 \
-  hub.hitosea.com/cossim/hipush \
-  -config /config/config.yaml
-```
-
-Running the Project Using Docker Compose [docker-compose.yaml](docker-compose.yaml)
-```bash
-docker-compose up -d 
-```
-
-## Usage
-
-More examples in [example](example)
-
-### HTTP
-Pushing to iOS
-```markdown
-curl --location --request POST 'http://<hipush-server>:7070/api/v1/push' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "platform": "ios",
-    "token": [
-        "xxxxx",
-        "xxxxx"
-    ],
-    "app_id": "com.hitosea.test1",
-    "app_name": "cossim",
-    "data": {
-        "title": "cossim",
-        "content": "hello",
-        "badge": 1,
-        "sound": {
-            "critical": 1,
-            "volume": 4.5,
-            "name": ""
-        }
-    },
-    "option": {
-        "dry_run": false,
-        "retry": 2,
-        "retry_interval": 1
-    }
-}'

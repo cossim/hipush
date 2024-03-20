@@ -101,6 +101,8 @@ func (h *Handler) pushHandler(c *gin.Context) {
 		err = h.handleXiaomiPush(c, req)
 	case consts.PlatformMeizu:
 		err = h.handleMeizuPush(c, req)
+	case consts.PlatformHonor:
+		err = h.handleHonorPush(c, req)
 
 	default:
 		c.JSON(http.StatusBadRequest, Response{Code: http.StatusBadRequest, Msg: "invalid platform", Data: nil})

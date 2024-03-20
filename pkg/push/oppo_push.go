@@ -39,13 +39,22 @@ func NewOppoService(cfg *config.Config, logger logr.Logger) *OppoService {
 		if !v.Enabled {
 			continue
 		}
-		if v.AppID == "" || v.AppKey == "" || v.AppSecret == "" {
+		if v.AppKey == "" || v.AppSecret == "" {
 			panic("push not enabled or misconfigured")
 		}
 		client := op.NewClient(v.AppKey, v.AppSecret)
-		s.clients[v.AppID] = client
+		if v.AppID == "" {
+			s.clients[v.AppName] = client
+		} else {
+			s.clients[v.AppID] = client
+		}
+
 		if v.AppName != "" {
-			s.appNameToIDMap[v.AppName] = v.AppID
+			if v.AppID == "" {
+				s.appNameToIDMap[v.AppName] = v.AppName
+			} else {
+				s.appNameToIDMap[v.AppName] = v.AppID
+			}
 		}
 	}
 

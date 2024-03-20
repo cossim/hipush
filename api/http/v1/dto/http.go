@@ -24,7 +24,6 @@ type PushRequest struct {
 	Option PushOption `json:"option,omitempty"`
 }
 
-// PushOption 表示推送选项的结构体
 type PushOption struct {
 	// DryRun 只进行数据校验不实际推送，数据校验成功即为成功
 	DryRun bool `json:"dry_run,omitempty"`

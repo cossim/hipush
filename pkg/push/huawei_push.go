@@ -201,9 +201,6 @@ func (h *HMSService) checkNotification(req *notify.HMSPushNotification) error {
 		return errors.New("content cannot be empty")
 	}
 
-	if req.MessageRequest == nil {
-		return errors.New("message request is empty")
-	}
 	return nil
 }
 
@@ -226,9 +223,7 @@ func (h *HMSService) buildNotification(req *notify.HMSPushNotification) (*model.
 		msgRequest.Message.Condition = req.Condition
 	}
 
-	if req.Priority == HIGH {
-		msgRequest.Message.Android.Urgency = "HIGH"
-	}
+	msgRequest.Message.Android.Urgency = req.Priority
 
 	if len(req.Priority) > 0 {
 		msgRequest.Message.Android.Urgency = req.Priority
@@ -254,13 +249,13 @@ func (h *HMSService) buildNotification(req *notify.HMSPushNotification) (*model.
 	}
 
 	// Notification Content
-	if req.MessageRequest.Message.Android.Notification != nil {
-		msgRequest.Message.Android.Notification = req.MessageRequest.Message.Android.Notification
-
-		if msgRequest.Message.Android.Notification.ClickAction == nil {
-			msgRequest.Message.Android.Notification.ClickAction = model.GetDefaultClickAction()
-		}
-	}
+	//if req.MessageRequest.Message.Android.Notification != nil {
+	//	msgRequest.Message.Android.Notification = req.MessageRequest.Message.Android.Notification
+	//
+	//	if msgRequest.Message.Android.Notification.ClickAction == nil {
+	//		msgRequest.Message.Android.Notification.ClickAction = model.GetDefaultClickAction()
+	//	}
+	//}
 
 	setDefaultAndroidNotification := func() {
 		if msgRequest.Message.Android.Notification == nil {

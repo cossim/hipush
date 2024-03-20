@@ -2,11 +2,13 @@ package http
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/cossim/hipush/api/http/v1/dto"
 	"github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/pkg/notify"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"time"
 )
 
 func (h *Handler) handleAndroidPush(c *gin.Context, req *dto.PushRequest) error {
@@ -32,26 +34,28 @@ func (h *Handler) handleAndroidPush(c *gin.Context, req *dto.PushRequest) error 
 
 	h.logger.Info("Handling push request", "platform", req.Platform, "appID", req.AppID, "tokens", req.Token, "req", r)
 
+	ttl, err := time.ParseDuration(r.TTL)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, Response{Code: http.StatusBadRequest, Msg: "invalid ttl", Data: nil})
+		return err
+	}
+
+	fmt.Println("ttl => ", ttl)
+
 	rr := &notify.FCMPushNotification{
-		AppID:            req.AppID,
-		AppName:          req.AppName,
-		Tokens:           req.Token,
-		Topic:            "",
-		Priority:         "",
-		Title:            r.Title,
-		Message:          r.Content,
-		Image:            "",
-		Sound:            "",
-		CollapseID:       "",
-		Category:         "",
-		Condition:        "",
-		TTL:              nil,
-		Retry:            0,
-		Badge:            nil,
-		ContentAvailable: false,
-		MutableContent:   false,
-		Data:             nil,
-		Apns:             nil,
+		AppID:      req.AppID,
+		AppName:    req.AppName,
+		Tokens:     req.Token,
+		Title:      r.Title,
+		Content:    r.Content,
+		Topic:      r.Topic,
+		Priority:   r.Priority,
+		Image:      r.Image,
+		Sound:      r.Sound,
+		CollapseID: r.CollapseID,
+		Condition:  r.Condition,
+		TTL:        ttl,
+		Data:       r.Data,
 	}
 	resp, err := service.Send(c, rr, &push.SendOptions{
 		DryRun:        req.Option.DryRun,

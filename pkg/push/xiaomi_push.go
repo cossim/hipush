@@ -41,9 +41,18 @@ func NewXiaomiService(cfg *config.Config, logger logr.Logger) *XiaomiPushService
 			panic("push not enabled or misconfigured")
 		}
 		client := xp.NewClient(v.AppSecret, v.Package)
-		s.clients[v.AppID] = client
+		if v.AppID == "" {
+			s.clients[v.AppName] = client
+		} else {
+			s.clients[v.AppID] = client
+		}
+
 		if v.AppName != "" {
-			s.appNameToIDMap[v.AppName] = v.AppID
+			if v.AppID == "" {
+				s.appNameToIDMap[v.AppName] = v.AppName
+			} else {
+				s.appNameToIDMap[v.AppName] = v.AppID
+			}
 		}
 	}
 
@@ -67,6 +76,13 @@ func (x *XiaomiPushService) Send(ctx context.Context, request interface{}, opt .
 	if err != nil {
 		return nil, err
 	}
+
+	marshal, err := json.Marshal(notification)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("marshal => ", string(marshal))
 
 	var appid string
 	if req.AppID != "" {
@@ -184,8 +200,8 @@ func (x *XiaomiPushService) checkNotification(req *notify.XiaomiPushNotification
 }
 
 func (x *XiaomiPushService) buildNotification(req *notify.XiaomiPushNotification) (*xp.Message, error) {
-	msg := xp.NewAndroidMessage(req.Title, req.Content).SetPayload("this is payload1")
-
+	//msg := xp.NewAndroidMessage(req.Title, req.Content).SetPayload("this is payload1")
+	msg := xp.NewAndroidMessage(req.Title, req.Content)
 	if req.NotifyType != 0 {
 		msg.SetNotifyType(int32(req.NotifyType))
 	}
@@ -196,6 +212,12 @@ func (x *XiaomiPushService) buildNotification(req *notify.XiaomiPushNotification
 
 	if req.IsScheduled && req.ScheduledTime != 0 {
 		msg.SetTimeToSend(int64(req.ScheduledTime))
+	}
+
+	if req.IsShowNotify {
+		msg.Extra["notify_foreground"] = "1"
+	} else {
+		msg.Extra["notify_foreground"] = "0"
 	}
 
 	return msg, nil

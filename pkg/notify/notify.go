@@ -7,7 +7,7 @@ import (
 
 const (
 	HIGH   = "high"
-	NORMAL = "nornal"
+	NORMAL = "normal"
 )
 
 type ClickAction struct {

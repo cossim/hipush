@@ -18,9 +18,7 @@ import (
 )
 
 var (
-	// MaxConcurrentAndroidPushes pool to limit the number of concurrent iOS pushes
-	MaxConcurrentAndroidPushes                  = make(chan struct{}, 100)
-	_                          push.PushService = &FCMService{}
+	_ push.PushService = &FCMService{}
 )
 
 // FCMService 谷歌安卓推送，实现了 PushService 接口
@@ -43,7 +41,7 @@ func NewFCMService(cfg *config.Config, logger logr.Logger) *FCMService {
 		if !v.Enabled {
 			continue
 		}
-		if v.KeyPath == "" || v.AppID == "" {
+		if v.KeyPath == "" {
 			panic("push not enabled or misconfigured")
 		}
 
@@ -57,10 +55,19 @@ func NewFCMService(cfg *config.Config, logger logr.Logger) *FCMService {
 		if err != nil {
 			panic(err)
 		}
-		s.clients[v.AppID] = client
-		fmt.Println("v.AppName => ", v.AppName)
+
+		if v.AppID == "" {
+			s.clients[v.AppName] = client
+		} else {
+			s.clients[v.AppID] = client
+		}
+
 		if v.AppName != "" {
-			s.appNameToIDMap[v.AppName] = v.AppID
+			if v.AppID == "" {
+				s.appNameToIDMap[v.AppName] = v.AppName
+			} else {
+				s.appNameToIDMap[v.AppName] = v.AppID
+			}
 		}
 	}
 
@@ -168,8 +175,10 @@ func (f *FCMService) checkNotification(req *notify.FCMPushNotification) error {
 	}
 
 	// ref: https://firebase.google.com/docs/cloud-messaging/http-server-ref
-	if req.TTL != nil && *req.TTL > uint(2419200) {
-		msg = "the message's TimeToLive field must be an integer " +
+	ttlSeconds := int(req.TTL.Seconds())
+	fmt.Println("ttlSeconds => ", ttlSeconds)
+	if ttlSeconds < 0 || ttlSeconds > 2419200 {
+		msg := "the message's TimeToLive field must be an integer " +
 			"between 0 and 2419200 (4 weeks)"
 		return errors.New(msg)
 	}
@@ -186,13 +195,19 @@ func (f *FCMService) IsTopic(req *notify.FCMPushNotification) bool {
 // https://firebase.google.com/docs/cloud-messaging/http-server-ref
 func (f *FCMService) buildAndroidNotification(req *notify.FCMPushNotification) *messaging.Message {
 	notification := &messaging.Message{
-		Token:     req.Topic,
+		//Token:     req.Topic,
+		Topic:     req.Topic,
 		Condition: req.Condition,
+		Android:   &messaging.AndroidConfig{},
 	}
 
 	if len(req.Tokens) > 0 {
 		//notification.Token = ""
 		//notification.Token = req.Tokens[0]
+	}
+
+	if req.Category != "" {
+		notification.Android.CollapseKey = req.CollapseID
 	}
 
 	if req.Priority == HIGH || req.Priority == "normal" {
@@ -201,15 +216,17 @@ func (f *FCMService) buildAndroidNotification(req *notify.FCMPushNotification) *
 
 	// Add another field
 	if len(req.Data) > 0 {
-		//notification.Data = req.Data
+		notification.Data = req.Data
 	}
+
+	notification.Android.TTL = &req.TTL
 
 	n := &messaging.Notification{}
 	isNotificationSet := false
 
-	if len(req.Message) > 0 {
+	if len(req.Content) > 0 {
 		isNotificationSet = true
-		n.Body = req.Message
+		n.Body = req.Content
 	}
 
 	if len(req.Title) > 0 {
