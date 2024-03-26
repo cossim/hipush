@@ -18,7 +18,7 @@ func main() {
     "token": [
         "xxx"
     ],
-    "app_id": "com.hitosea.apptest",
+    "app_id": "xxx",
     "app_name": "cossim",
     "data": {
         "title": "cossim",

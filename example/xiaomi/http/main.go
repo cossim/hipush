@@ -18,7 +18,7 @@ func main() {
     "token": [
         "xxx"
     ],
-    "app_id": "2882303761520159644",
+    "app_id": "xxx",
     "app_name": "cossim",
     "data": {
         "title": "测试标题",

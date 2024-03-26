@@ -49,10 +49,10 @@ func main() {
 	}
 
 	req := &v1.PushRequest{
-		AppID:    "com.hitosea.apptest",
+		AppID:    "xxx",
 		AppName:  "cossim",
 		Platform: "android",
-		Token:    []string{"cb7f8a974eec5fbb2e36762fcb78e51327bcef4822d600f17e8f9bd845af1e12"},
+		Token:    []string{"xxx"},
 		Data:     structValue,
 		Option:   nil,
 	}
