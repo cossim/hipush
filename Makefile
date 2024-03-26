@@ -30,9 +30,10 @@ install: ## Install dependencies and protoc
 
 .PHONY: gen
 gen: ## generate protobuf file
-	#protoc -I=. --go_out=. --go_opt=module=${PKG} --go-grpc_out=. --go-grpc_opt=module=${PKG},require_unimplemented_servers=true api/grpc/v1/*.proto
-	protoc -I api/grpc/v1 api/grpc/v1/push.proto --go_out=api/grpc/v1 --go-grpc_out=require_unimplemented_servers=false:api/grpc/v1
-	protoc-go-inject-tag -input=api/grpc/v1/*.pb.go
+	#protoc -I=. --go_out=. --go_opt=module=${PKG} --go-grpc_out=. --go-grpc_opt=module=${PKG},require_unimplemented_servers=true api/pb/v1/*.proto
+	#protoc -I api/pb/v1 api/pb/v1/*.proto --gofast_out=api/pb/v1 --go-grpc_out=require_unimplemented_servers=false:api/pb/v1
+	protoc -I api/pb/v1 api/pb/v1/*.proto --go_out=api/pb/v1 --go-grpc_out=require_unimplemented_servers=false:api/pb/v1
+	protoc-go-inject-tag -input=api/pb/v1/*.pb.go
 
 .PHONY: docker-build
 # If you wish built the manager image targeting other platforms you can use the --platform flag.

@@ -8,7 +8,6 @@ import (
 	"github.com/cossim/hipush/config"
 	hClient "github.com/cossim/hipush/pkg/client/push"
 	"github.com/cossim/hipush/pkg/consts"
-	"github.com/cossim/hipush/pkg/notify"
 	"github.com/cossim/hipush/pkg/status"
 	"github.com/go-logr/logr"
 	"log"
@@ -62,20 +61,16 @@ func NewHonorService(cfg *config.Config, logger logr.Logger) *HonorService {
 	return s
 }
 
-func (h *HonorService) Send(ctx context.Context, request interface{}, opt ...push.SendOption) (*push.SendResponse, error) {
-	req, ok := request.(*notify.HonorPushNotification)
-	if !ok {
-		return nil, errors.New("invalid request")
-	}
-
+func (h *HonorService) Send(ctx context.Context, req push.SendRequest, opt ...push.SendOption) (*push.SendResponse, error) {
 	so := &push.SendOptions{}
 	so.ApplyOptions(opt)
 
 	var appid string
-	if req.AppID != "" {
-		appid = req.AppID
-	} else if req.AppName != "" {
-		appid, ok = h.appNameToIDMap[req.AppName]
+	var ok bool
+	if req.GetAppID() != "" {
+		appid = req.GetAppID()
+	} else if req.GetAppName() != "" {
+		appid, ok = h.appNameToIDMap[req.GetAppName()]
 		if !ok {
 			return nil, ErrInvalidAppID
 		}
@@ -87,7 +82,7 @@ func (h *HonorService) Send(ctx context.Context, request interface{}, opt ...pus
 		return nil, err
 	}
 
-	notification := h.buildAndroidNotification(req)
+	notification := h.buildAndroidNotification(req, so)
 
 	if so.DryRun {
 		return nil, nil
@@ -97,7 +92,7 @@ func (h *HonorService) Send(ctx context.Context, request interface{}, opt ...pus
 		return h.send(ctx, appid, token, notification)
 	}
 
-	resp, err := RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
+	resp, err := RetrySend(ctx, send, req.GetToken(), so.Retry, so.RetryInterval, 100)
 	if err != nil {
 		return nil, err
 	}
@@ -213,76 +208,70 @@ func (h *HonorService) send(ctx context.Context, appid string, token string, not
 	//return newTokens, nil
 }
 
-func (h *HonorService) checkNotification(req *notify.HonorPushNotification) error {
-	if len(req.Tokens) == 0 {
+func (h *HonorService) checkNotification(req push.SendRequest) error {
+	if len(req.GetToken()) == 0 {
 		return errors.New("tokens cannot be empty")
 	}
 
-	if req.Title == "" {
+	if req.GetTitle() == "" {
 		return errors.New("title cannot be empty")
 	}
 
-	if req.Content == "" {
+	if req.GetContent() == "" {
 		return errors.New("content cannot be empty")
 	}
 
 	return nil
 }
 
-func (h *HonorService) buildAndroidNotification(req *notify.HonorPushNotification) *hClient.SendMessageRequest {
+func (h *HonorService) buildAndroidNotification(req push.SendRequest, so *push.SendOptions) *hClient.SendMessageRequest {
 	// 构建通知栏消息
 	notification := &hClient.Notification{
-		Title: req.Title,
-		Body:  req.Content,
-		Image: req.Image,
+		Title: req.GetTitle(),
+		Body:  req.GetContent(),
+		Image: req.GetIcon(),
 	}
 
 	// 构建 Android 平台的通知消息
 	androidNotification := &hClient.AndroidNotification{
-		Title:    req.Title,
-		Body:     req.Content,
-		Image:    req.Image,
-		NotifyID: req.NotifyId,
-		Badge: &hClient.BadgeNotification{
-			AddNum:     req.Badge.AddNum,
-			SetNum:     req.Badge.SetNum,
-			BadgeClass: req.Badge.BadgeClass,
-		},
-		ClickAction: &hClient.ClickAction{
-			Type:   req.ClickAction.Action,
-			Intent: req.ClickAction.Activity,
-			URL:    req.ClickAction.Url,
-			Action: req.ClickAction.Activity,
-		},
+		Title: req.GetTitle(),
+		Body:  req.GetContent(),
+		Image: req.GetIcon(),
+		//NotifyID: req.NotifyId,
+		//Badge: &hClient.BadgeNotification{
+		//	AddNum:     req.Badge.AddNum,
+		//	SetNum:     req.Badge.SetNum,
+		//	BadgeClass: req.Badge.BadgeClass,
+		//},
+		//ClickAction: &hClient.ClickAction{
+		//	Type:   req.ClickAction.Action,
+		//	Intent: req.ClickAction.Activity,
+		//	URL:    req.ClickAction.Url,
+		//	Action: req.ClickAction.Activity,
+		//},
 	}
 
 	var targetUserType int
 
-	if req.Development {
+	if so.Development {
 		targetUserType = 1
-	}
-
-	// 将 map 转换为 JSON 字符串
-	data, err := json.Marshal(req.Data)
-	if err != nil {
-		log.Printf("Error marshalling data: %v", err)
 	}
 
 	// 构建 Android 平台消息推送配置
 	androidConfig := &hClient.AndroidConfig{
-		TTL:            req.TTL,      // 设置消息缓存时间
-		BiTag:          "",           // 设置批量任务消息标识
-		Data:           string(data), // 设置自定义消息负载
+		//TTL:            req.GetTTL(),      // 设置消息缓存时间
+		BiTag: "", // 设置批量任务消息标识
+		//Data:           string(data), // 设置自定义消息负载
 		Notification:   androidNotification,
 		TargetUserType: targetUserType, // 设置目标用户类型
 	}
 
 	// 构建发送消息请求
 	sendMessageReq := &hClient.SendMessageRequest{
-		Data:         string(data), // 设置自定义消息负载
+		//Data:         string(data), // 设置自定义消息负载
 		Notification: notification,
 		Android:      androidConfig,
-		Token:        req.Tokens,
+		Token:        req.GetToken(),
 	}
 
 	return sendMessageReq

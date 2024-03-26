@@ -8,13 +8,10 @@ import (
 	"github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/pkg/consts"
-	"github.com/cossim/hipush/pkg/notify"
 	"github.com/cossim/hipush/pkg/status"
 	vp "github.com/cossim/vivo-push"
-	"github.com/go-co-op/gocron/v2"
 	"github.com/go-logr/logr"
 	"log"
-	"net/url"
 	"strings"
 )
 
@@ -29,17 +26,14 @@ type VivoService struct {
 	appNameToIDMap map[string]string
 	status         *status.StateStorage
 	logger         logr.Logger
-
-	scheduler gocron.Scheduler
 }
 
-func NewVivoService(cfg *config.Config, logger logr.Logger, scheduler gocron.Scheduler) *VivoService {
+func NewVivoService(cfg *config.Config, logger logr.Logger) *VivoService {
 	s := &VivoService{
 		clients:        make(map[string]*vp.VivoPush),
 		appNameToIDMap: make(map[string]string),
 		status:         status.StatStorage,
 		logger:         logger,
-		scheduler:      scheduler,
 	}
 
 	for _, v := range cfg.Vivo {
@@ -62,30 +56,26 @@ func NewVivoService(cfg *config.Config, logger logr.Logger, scheduler gocron.Sch
 	return s
 }
 
-func (v *VivoService) Send(ctx context.Context, request interface{}, opt ...push.SendOption) (*push.SendResponse, error) {
-	req, ok := request.(*notify.VivoPushNotification)
-	if !ok {
-		return nil, errors.New("invalid request")
-	}
-
+func (v *VivoService) Send(ctx context.Context, req push.SendRequest, opt ...push.SendOption) (*push.SendResponse, error) {
 	so := &push.SendOptions{}
 	so.ApplyOptions(opt)
 
-	notification, err := v.buildNotification(req)
-	if err != nil {
-		return nil, err
-	}
-
 	var appid string
-	if req.AppID != "" {
-		appid = req.AppID
-	} else if req.AppName != "" {
-		appid, ok = v.appNameToIDMap[req.AppName]
+	var ok bool
+	if req.GetAppID() != "" {
+		appid = req.GetAppID()
+	} else if req.GetAppName() != "" {
+		appid, ok = v.appNameToIDMap[req.GetAppName()]
 		if !ok {
 			return nil, ErrInvalidAppID
 		}
 	} else {
 		return nil, ErrInvalidAppID
+	}
+
+	notification, err := v.buildNotification(req, so)
+	if err != nil {
+		return nil, err
 	}
 
 	if so.DryRun {
@@ -96,7 +86,7 @@ func (v *VivoService) Send(ctx context.Context, request interface{}, opt ...push
 		return v.send(appid, token, notification)
 	}
 
-	resp, err := RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
+	resp, err := RetrySend(ctx, send, req.GetToken(), so.Retry, so.RetryInterval, 100)
 	if err != nil {
 		return nil, err
 	}
@@ -107,39 +97,6 @@ func (v *VivoService) Send(ctx context.Context, request interface{}, opt ...push
 	}
 
 	return &push.SendResponse{TaskId: taskid}, nil
-	//
-	//if err := RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100); err != nil {
-	//	return nil,err
-	//}
-	//
-	//_, err = v.scheduler.NewJob(gocron.OneTimeJob(gocron.OneTimeJobStartImmediately()), gocron.NewTask(func(appid, taskID string) {
-	//	fmt.Println("start vivo job")
-	//	client, ok := v.clients[appid]
-	//	if !ok {
-	//		v.logger.Error(ErrInvalidAppID, ErrInvalidAppID.Error())
-	//		return
-	//	}
-	//	resp, err := client.GetMessageStatusByJobKey(taskID)
-	//	if err != nil {
-	//		v.logger.Error(err, "vivo get status error")
-	//		return
-	//	}
-	//	if resp.Result == 0 {
-	//		for _, ss := range resp.Statistics {
-	//			if ss.TaskId == taskID {
-	//				v.status.SetVivoSend(int64(ss.Send))
-	//				v.status.SetVivoReceive(int64(ss.Receive))
-	//				v.status.SetVivoDisplay(int64(ss.Display))
-	//				v.status.SetVivoClick(int64(ss.Click))
-	//			}
-	//		}
-	//	}
-	//}, appid, req.TaskID))
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//return nil
 }
 
 // getTaskIDFromResponse 从 Response 结构体中获取 task_id 字段
@@ -193,77 +150,75 @@ func (v *VivoService) send(appid string, token string, notification *vp.Message)
 	return resp, err
 }
 
-func (v *VivoService) buildNotification(req *notify.VivoPushNotification) (*vp.Message, error) {
+func (v *VivoService) buildNotification(req push.SendRequest, so *push.SendOptions) (*vp.Message, error) {
 	// 检查 tokens 是否为空
-	if len(req.Tokens) == 0 {
+	if len(req.GetToken()) == 0 {
 		return nil, errors.New("tokens cannot be empty")
 	}
 
-	if req.Title == "" {
+	if req.GetTitle() == "" {
 		return nil, errors.New("title cannot be empty")
 	}
 
-	if req.Message == "" {
-		return nil, errors.New("message cannot be empty")
-	}
-
-	// 设置默认的 ClickAction
-	defaultClickAction := &notify.VivoClickAction{
-		Action: 1,
+	if req.GetContent() == "" {
+		return nil, errors.New("content cannot be empty")
 	}
 
 	// 检查 ClickAction 是否为空，为空则使用默认值
-	clickAction := req.ClickAction
-	if clickAction == nil {
-		clickAction = defaultClickAction
-	}
+	//clickAction := req.GetClickAction()
+	//if clickAction == nil {
+	//	clickAction.Action = 1
+	//}
+	//
+	//if clickAction.Action == 0 {
+	//	// 设置默认的 ClickAction
+	//	clickAction.Action = 1
+	//}
+	//
+	//// 检查 URL 是否为合法 URL
+	//if clickAction.Action == 2 {
+	//	_, err := url.Parse(clickAction.Url)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//}
 
-	if clickAction.Action == 0 {
-		clickAction.Action = 1
-	}
-
-	// 检查 URL 是否为合法 URL
-	if clickAction.Action == 2 {
-		_, err := url.Parse(clickAction.Url)
-		if err != nil {
-			return nil, err
-		}
-	}
-
+	var notifyType = req.GetNotifyType()
 	// 检查 NotifyType 是否为有效值
-	if req.NotifyType != 0 && req.NotifyType < 1 || req.NotifyType > 4 {
+	if notifyType != 0 && notifyType < 1 || notifyType > 4 {
 		return nil, errors.New("invalid notify type")
 	}
 
-	if req.NotifyType == 0 {
-		req.NotifyType = 2
+	if req.GetNotifyType() == 0 {
+		notifyType = 2
 	}
 
 	var pushMode int
-	if req.Development {
+	if so.Development {
 		pushMode = 1
 	}
 
-	if req.TTL == 0 {
-		req.TTL = 60
+	var ttl int64
+	if req.GetTTL() == 0 {
+		ttl = 60
 	}
 
 	message := &vp.Message{
-		RegId:           strings.Join(req.Tokens, ","),
-		NotifyType:      req.NotifyType,
-		Title:           req.Title,
-		Content:         req.Message,
-		TimeToLive:      int64(req.TTL),
-		SkipType:        clickAction.Action,
-		SkipContent:     clickAction.Url,
-		NetworkType:     -1,
-		ClientCustomMap: req.Data,
+		RegId:       strings.Join(req.GetToken(), ","),
+		NotifyType:  int(notifyType),
+		Title:       req.GetTitle(),
+		Content:     req.GetContent(),
+		TimeToLive:  ttl,
+		SkipType:    1,
+		SkipContent: "",
+		NetworkType: -1,
+		//ClientCustomMap: req.Data,
 		//Extra:           req.Data.ExtraMap(),
-		RequestId:      req.RequestId,
-		NotifyID:       req.NotifyID,
-		Category:       req.Category,
+		//RequestId:      req.RequestId,
+		//NotifyID:       req.NotifyID,
+		Category:       req.GetCategory(),
 		PushMode:       pushMode, // 默认为正式推送
-		ForegroundShow: req.Foreground,
+		ForegroundShow: req.GetForeground(),
 	}
 	return message, nil
 }

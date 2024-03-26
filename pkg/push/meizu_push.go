@@ -8,7 +8,6 @@ import (
 	"github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/pkg/consts"
-	"github.com/cossim/hipush/pkg/notify"
 	"github.com/cossim/hipush/pkg/status"
 	"github.com/go-logr/logr"
 	"log"
@@ -54,14 +53,22 @@ func NewMeizuService(cfg *config.Config, logger logr.Logger) *MeizuService {
 	return s
 }
 
-func (m *MeizuService) Send(ctx context.Context, request interface{}, opt ...push.SendOption) (*push.SendResponse, error) {
-	req, ok := request.(*notify.MeizuPushNotification)
-	if !ok {
-		return nil, errors.New("invalid request")
-	}
-
+func (m *MeizuService) Send(ctx context.Context, req push.SendRequest, opt ...push.SendOption) (*push.SendResponse, error) {
 	so := &push.SendOptions{}
 	so.ApplyOptions(opt)
+
+	var appid string
+	var ok bool
+	if req.GetAppID() != "" {
+		appid = req.GetAppID()
+	} else if req.GetAppName() != "" {
+		appid, ok = m.appNameToIDMap[req.GetAppName()]
+		if !ok {
+			return nil, ErrInvalidAppID
+		}
+	} else {
+		return nil, ErrInvalidAppID
+	}
 
 	if err := m.checkNotification(req); err != nil {
 		return nil, err
@@ -72,18 +79,6 @@ func (m *MeizuService) Send(ctx context.Context, request interface{}, opt ...pus
 		return nil, err
 	}
 
-	var appid string
-	if req.AppID != "" {
-		appid = req.AppID
-	} else if req.AppName != "" {
-		appid, ok = m.appNameToIDMap[req.AppName]
-		if !ok {
-			return nil, ErrInvalidAppID
-		}
-	} else {
-		return nil, ErrInvalidAppID
-	}
-
 	if so.DryRun {
 		return nil, nil
 	}
@@ -92,7 +87,7 @@ func (m *MeizuService) Send(ctx context.Context, request interface{}, opt ...pus
 		return m.send(appid, token, notification)
 	}
 
-	_, err = RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
+	_, err = RetrySend(ctx, send, req.GetToken(), so.Retry, so.RetryInterval, 100)
 	if err != nil {
 		return nil, err
 	}
@@ -171,44 +166,44 @@ func (m *MeizuService) send(appid string, token string, message string) (*Respon
 	//return newTokens, nil
 }
 
-func (m *MeizuService) checkNotification(req *notify.MeizuPushNotification) error {
-	if len(req.Tokens) == 0 {
+func (m *MeizuService) checkNotification(req push.SendRequest) error {
+	if len(req.GetToken()) == 0 {
 		return errors.New("tokens cannot be empty")
 	}
 
-	if req.Title == "" {
+	if req.GetTitle() == "" {
 		return errors.New("title cannot be empty")
 	}
 
-	if req.Content == "" {
+	if req.GetContent() == "" {
 		return errors.New("message cannot be empty")
 	}
 
-	if req.IsScheduled && (req.ScheduledStartTime == "" || req.ScheduledEndTime == "") {
-		return errors.New("scheduled time cannot be empty")
-	}
+	//if req.IsScheduled && (req.ScheduledStartTime == "" || req.ScheduledEndTime == "") {
+	//	return errors.New("scheduled time cannot be empty")
+	//}
 
 	return nil
 }
 
-func (m *MeizuService) buildNotification(req *notify.MeizuPushNotification) (string, error) {
+func (m *MeizuService) buildNotification(req push.SendRequest) (string, error) {
 	msg := mzp.BuildNotificationMessage()
-	msg.NoticeBarInfo.Title = req.Title
-	msg.NoticeBarInfo.Content = req.Content
-	msg.ClickTypeInfo = mzp.ClickTypeInfo{
-		ClickType:  req.ClickAction.Action,
-		Url:        req.ClickAction.Url,
-		Parameters: req.ClickAction.Parameters,
-		Activity:   req.ClickAction.Activity,
-	}
+	msg.NoticeBarInfo.Title = req.GetTitle()
+	msg.NoticeBarInfo.Content = req.GetContent()
+	//msg.ClickTypeInfo = mzp.ClickTypeInfo{
+	//	ClickType:  req.ClickAction.Action,
+	//	Url:        req.ClickAction.Url,
+	//	Parameters: req.ClickAction.Parameters,
+	//	Activity:   req.ClickAction.Activity,
+	//}
 
-	offLine := 0
-	if req.OffLine {
-		offLine = 1
-	}
+	//offLine := 0
+	//if req.OffLine {
+	//	offLine = 1
+	//}
 	msg.PushTimeInfo = mzp.PushTimeInfo{
-		OffLine:   offLine,
-		ValidTime: req.TTL,
+		//OffLine:   offLine,
+		ValidTime: int(req.GetTTL()),
 	}
 
 	message, err := json.Marshal(msg)

@@ -85,7 +85,7 @@ type HonorAppConfig struct {
 
 type Config struct {
 	HTTP    HTTPConfig         `yaml:"http"`
-	GRPC    GRPCConfig         `yaml:"grpc"`
+	GRPC    GRPCConfig         `yaml:"pb"`
 	Storage Storage            `yaml:"storage"`
 	IOS     []iOSAppConfig     `yaml:"ios"`
 	Huawei  []HuaweiAppConfig  `yaml:"huawei"`

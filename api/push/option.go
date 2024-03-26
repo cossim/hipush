@@ -8,19 +8,23 @@ type SendOption interface {
 type SendOptions struct {
 	// DryRun 只进行数据校验不实际推送，数据校验成功即为成功
 	DryRun bool `json:"dry_run,omitempty"`
+	// Development 测试环境推送
+	Development bool `json:"development,omitempty"`
 	// Retry 重试次数
-	Retry int `json:"retry,omitempty"`
+	Retry int32 `json:"retry,omitempty"`
 	// RetryInterval 重试间隔（以秒为单位）
-	RetryInterval int `json:"retry_interval"`
+	RetryInterval int32 `json:"retry_interval"`
 }
 
 func (s *SendOptions) Apply(option *SendOptions) {
 	if s.DryRun {
 		option.DryRun = true
 	}
-	if s.Retry > 0 {
-		option.Retry = s.Retry
+	if s.Development {
+		option.Development = true
 	}
+	option.Retry = s.Retry
+	option.RetryInterval = s.RetryInterval
 }
 
 func (s *SendOptions) ApplyOptions(opts []SendOption) *SendOptions {

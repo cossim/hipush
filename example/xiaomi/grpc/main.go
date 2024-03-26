@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/golang/protobuf/jsonpb"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/structpb"
 	"log"
 
-	"github.com/cossim/hipush/api/grpc/v1"
+	"github.com/cossim/hipush/api/pb/v1"
 	"google.golang.org/grpc"
 )
 
@@ -19,33 +21,46 @@ func main() {
 	defer conn.Close()
 	c := v1.NewPushServiceClient(conn)
 
-	// Contact the server and print out its response.
+	//Contact the server and print out its response.
 	ctx := context.Background()
-	req := &v1.PushRequest{
-		Platform: "xiaomi",
-		Tokens: []string{
-			"xxx",
-		},
-		Title:            "cossim",
-		Message:          "",
-		Topic:            "",
-		Key:              "",
-		Category:         "",
-		Sound:            "",
-		Alert:            nil,
-		Badge:            0,
-		ThreadID:         "",
-		Data:             nil,
-		Image:            "",
-		ID:               "",
-		PushType:         "",
-		AppID:            "",
-		Priority:         0,
-		ContentAvailable: false,
-		MutableContent:   false,
-		Development:      false,
-		Option:           nil,
+
+	ap := &v1.XiaomiPushRequestData{
+		Title:       "cossim",
+		Subtitle:    "",
+		Content:     "hello",
+		Foreground:  true,
+		Icon:        "",
+		TTL:         0,
+		NotifyType:  0,
+		ClickAction: nil,
 	}
+
+	marshaler := &jsonpb.Marshaler{}
+	jsonString, err := marshaler.MarshalToString(ap)
+	if err != nil {
+		log.Fatalf("Failed to marshal struct to JSON: %v", err)
+	}
+
+	structValue := &structpb.Struct{}
+	err = jsonpb.UnmarshalString(jsonString, structValue)
+	if err != nil {
+		log.Fatalf("Failed to unmarshal JSON to structpb.Struct: %v", err)
+	}
+
+	req := &v1.PushRequest{
+		AppID:    "xxx",
+		AppName:  "cossim",
+		Platform: "xiaomi",
+		Token:    []string{"xxx"},
+		Data:     structValue,
+		Option: &v1.PushOption{
+			DryRun:        true,
+			Development:   false,
+			Retry:         0,
+			RetryInterval: 0,
+		},
+	}
+
 	resp, err := c.Push(ctx, req)
 	if err != nil {
 		log.Fatalf("could not push: %v", err)

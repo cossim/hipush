@@ -21,7 +21,7 @@ const (
 	// HTTP方式
 	HTTPPrefix = key + "-http"
 	// GRPC方式
-	GRPCPrefix = key + "-grpc"
+	GRPCPrefix = key + "-pb"
 
 	// iOS平台
 	iOSPrefix = key + "-ios"

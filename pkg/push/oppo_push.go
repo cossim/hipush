@@ -9,7 +9,6 @@ import (
 	"github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/pkg/consts"
-	"github.com/cossim/hipush/pkg/notify"
 	"github.com/cossim/hipush/pkg/status"
 	"github.com/go-logr/logr"
 	"log"
@@ -61,14 +60,22 @@ func NewOppoService(cfg *config.Config, logger logr.Logger) *OppoService {
 	return s
 }
 
-func (o *OppoService) Send(ctx context.Context, request interface{}, opt ...push.SendOption) (*push.SendResponse, error) {
-	req, ok := request.(*notify.OppoPushNotification)
-	if !ok {
-		return nil, errors.New("invalid request")
-	}
-
+func (o *OppoService) Send(ctx context.Context, req push.SendRequest, opt ...push.SendOption) (*push.SendResponse, error) {
 	so := &push.SendOptions{}
 	so.ApplyOptions(opt)
+
+	var appid string
+	var ok bool
+	if req.GetAppID() != "" {
+		appid = req.GetAppID()
+	} else if req.GetAppName() != "" {
+		appid, ok = o.appNameToIDMap[req.GetAppName()]
+		if !ok {
+			return nil, ErrInvalidAppID
+		}
+	} else {
+		return nil, ErrInvalidAppID
+	}
 
 	if err := o.checkNotification(req); err != nil {
 		return nil, err
@@ -79,18 +86,6 @@ func (o *OppoService) Send(ctx context.Context, request interface{}, opt ...push
 		return nil, err
 	}
 
-	var appid string
-	if req.AppID != "" {
-		appid = req.AppID
-	} else if req.AppName != "" {
-		appid, ok = o.appNameToIDMap[req.AppName]
-		if !ok {
-			return nil, ErrInvalidAppID
-		}
-	} else {
-		return nil, ErrInvalidAppID
-	}
-
 	if so.DryRun {
 		return nil, nil
 	}
@@ -99,7 +94,7 @@ func (o *OppoService) Send(ctx context.Context, request interface{}, opt ...push
 		return o.send(appid, token, notification)
 	}
 
-	resp, err := RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
+	resp, err := RetrySend(ctx, send, req.GetToken(), so.Retry, so.RetryInterval, 100)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +154,7 @@ func (o *OppoService) send(appID string, token string, notification *op.Message)
 		resp.Code = res.Code
 		resp.Msg = res.Message
 	} else {
-		log.Printf("oppo send success: %s", res.Message)
+		log.Printf("oppo send success: %v", res)
 		o.status.AddOppoSuccess(1)
 		resp.Code = Success
 		resp.Msg = res.Message
@@ -169,36 +164,36 @@ func (o *OppoService) send(appID string, token string, notification *op.Message)
 	return resp, err
 }
 
-func (o *OppoService) checkNotification(req *notify.OppoPushNotification) error {
-	if len(req.Tokens) == 0 {
+func (o *OppoService) checkNotification(req push.SendRequest) error {
+	if len(req.GetToken()) == 0 {
 		return errors.New("tokens cannot be empty")
 	}
 
-	if req.Title == "" {
+	if req.GetTitle() == "" {
 		return errors.New("title cannot be empty")
 	}
 
-	if req.Message == "" {
-		return errors.New("message cannot be empty")
+	if req.GetContent() == "" {
+		return errors.New("content cannot be empty")
 	}
 
 	return nil
 }
 
-func (o *OppoService) buildNotification(req *notify.OppoPushNotification) (*op.Message, error) {
-	m := op.NewMessage(req.Title, req.Message).
-		SetSubTitle(req.Subtitle).
+func (o *OppoService) buildNotification(req push.SendRequest) (*op.Message, error) {
+	m := op.NewMessage(req.GetTitle(), req.GetContent()).
+		//SetSubTitle(req.Subtitle).
 		SetTargetType(2)
-	if req.ClickAction != nil {
-		if req.ClickAction.Action == 1 || req.ClickAction.Action == 4 {
-			m.SetClickActionActivity(req.ClickAction.Activity)
-		}
-		if req.ClickAction.Action == 2 {
-			m.SetClickActionUrl(req.ClickAction.Url)
-		}
-		m.SetClickActionType(req.ClickAction.Action)
-		m.SetActionParameters(req.ClickAction.Parameters)
-	}
+	//if req.ClickAction != nil {
+	//	if req.ClickAction.Action == 1 || req.ClickAction.Action == 4 {
+	//		m.SetClickActionActivity(req.ClickAction.Activity)
+	//	}
+	//	if req.ClickAction.Action == 2 {
+	//		m.SetClickActionUrl(req.ClickAction.Url)
+	//	}
+	//	m.SetClickActionType(req.ClickAction.Action)
+	//	m.SetActionParameters(req.ClickAction.Parameters)
+	//}
 
 	return m, nil
 }

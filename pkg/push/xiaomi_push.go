@@ -8,7 +8,6 @@ import (
 	"github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/pkg/consts"
-	"github.com/cossim/hipush/pkg/notify"
 	"github.com/cossim/hipush/pkg/status"
 	xp "github.com/cossim/xiaomi-push"
 	"github.com/go-logr/logr"
@@ -59,14 +58,22 @@ func NewXiaomiService(cfg *config.Config, logger logr.Logger) *XiaomiPushService
 	return s
 }
 
-func (x *XiaomiPushService) Send(ctx context.Context, request interface{}, opt ...push.SendOption) (*push.SendResponse, error) {
-	req, ok := request.(*notify.XiaomiPushNotification)
-	if !ok {
-		return nil, errors.New("invalid request")
-	}
-
+func (x *XiaomiPushService) Send(ctx context.Context, req push.SendRequest, opt ...push.SendOption) (*push.SendResponse, error) {
 	so := &push.SendOptions{}
 	so.ApplyOptions(opt)
+
+	var appid string
+	var ok bool
+	if req.GetAppID() != "" {
+		appid = req.GetAppID()
+	} else if req.GetAppName() != "" {
+		appid, ok = x.appNameToIDMap[req.GetAppName()]
+		if !ok {
+			return nil, ErrInvalidAppID
+		}
+	} else {
+		return nil, ErrInvalidAppID
+	}
 
 	if err := x.checkNotification(req); err != nil {
 		return nil, err
@@ -77,18 +84,6 @@ func (x *XiaomiPushService) Send(ctx context.Context, request interface{}, opt .
 		return nil, err
 	}
 
-	var appid string
-	if req.AppID != "" {
-		appid = req.AppID
-	} else if req.AppName != "" {
-		appid, ok = x.appNameToIDMap[req.AppName]
-		if !ok {
-			return nil, ErrInvalidAppID
-		}
-	} else {
-		return nil, ErrInvalidAppID
-	}
-
 	if so.DryRun {
 		return nil, nil
 	}
@@ -97,7 +92,7 @@ func (x *XiaomiPushService) Send(ctx context.Context, request interface{}, opt .
 		return x.send(ctx, appid, token, notification)
 	}
 
-	res, err := RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
+	res, err := RetrySend(ctx, send, req.GetToken(), so.Retry, so.RetryInterval, 100)
 	if err != nil {
 		return nil, err
 	}
@@ -172,42 +167,42 @@ func (x *XiaomiPushService) GetTasksStatus(ctx context.Context, key string, task
 	return nil
 }
 
-func (x *XiaomiPushService) checkNotification(req *notify.XiaomiPushNotification) error {
-	if len(req.Tokens) == 0 {
+func (x *XiaomiPushService) checkNotification(req push.SendRequest) error {
+	if len(req.GetToken()) == 0 {
 		return errors.New("tokens cannot be empty")
 	}
 
-	if req.Title == "" {
+	if req.GetTitle() == "" {
 		return errors.New("title cannot be empty")
 	}
 
-	if req.Content == "" {
+	if req.GetContent() == "" {
 		return errors.New("content cannot be empty")
 	}
 
-	if req.IsScheduled && req.ScheduledTime == 0 {
-		return errors.New("scheduled time cannot be empty")
-	}
+	//if req.IsScheduled && req.ScheduledTime == 0 {
+	//	return errors.New("scheduled time cannot be empty")
+	//}
 
 	return nil
 }
 
-func (x *XiaomiPushService) buildNotification(req *notify.XiaomiPushNotification) (*xp.Message, error) {
+func (x *XiaomiPushService) buildNotification(req push.SendRequest) (*xp.Message, error) {
 	//msg := xp.NewAndroidMessage(req.Title, req.Content).SetPayload("this is payload1")
-	msg := xp.NewAndroidMessage(req.Title, req.Content)
-	if req.NotifyType != 0 {
-		msg.SetNotifyType(int32(req.NotifyType))
+	msg := xp.NewAndroidMessage(req.GetTitle(), req.GetContent())
+	//if req.NotifyType != 0 {
+	//	msg.SetNotifyType(int32(req.NotifyType))
+	//}
+
+	if req.GetTTL() != 0 {
+		msg.SetTimeToLive(req.GetTTL())
 	}
 
-	if req.TTL != 0 {
-		msg.SetTimeToLive(req.TTL)
-	}
+	//if req.IsScheduled && req.ScheduledTime != 0 {
+	//	msg.SetTimeToSend(int64(req.ScheduledTime))
+	//}
 
-	if req.IsScheduled && req.ScheduledTime != 0 {
-		msg.SetTimeToSend(int64(req.ScheduledTime))
-	}
-
-	if req.IsShowNotify {
+	if req.GetForeground() {
 		msg.Extra["notify_foreground"] = "1"
 	} else {
 		msg.Extra["notify_foreground"] = "0"
@@ -237,7 +232,7 @@ func (x *XiaomiPushService) send(ctx context.Context, appID string, token string
 		resp.Code = int(res.Code)
 		resp.Msg = res.Reason
 	} else {
-		log.Printf("xiaomi send success: %s", res.Reason)
+		log.Printf("xiaomi send success: %v", res)
 		x.status.AddXiaomiSuccess(1)
 		resp.Code = Success
 		resp.Msg = res.Reason

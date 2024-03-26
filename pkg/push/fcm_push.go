@@ -5,16 +5,15 @@ import (
 	"errors"
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/messaging"
-	"fmt"
 	"github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/pkg/consts"
-	"github.com/cossim/hipush/pkg/notify"
 	"github.com/cossim/hipush/pkg/status"
 	"github.com/go-logr/logr"
 	"google.golang.org/api/option"
 	"log"
 	"strings"
+	"time"
 )
 
 var (
@@ -74,22 +73,16 @@ func NewFCMService(cfg *config.Config, logger logr.Logger) *FCMService {
 	return s
 }
 
-func (f *FCMService) Send(ctx context.Context, request interface{}, opt ...push.SendOption) (*push.SendResponse, error) {
-	req, ok := request.(*notify.FCMPushNotification)
-	if !ok {
-		return nil, errors.New("invalid request")
-	}
-
+func (f *FCMService) Send(ctx context.Context, req push.SendRequest, opt ...push.SendOption) (*push.SendResponse, error) {
 	so := &push.SendOptions{}
 	so.ApplyOptions(opt)
 
-	fmt.Println("req.AppName => ", req.AppName)
-
 	var appid string
-	if req.AppID != "" {
-		appid = req.AppID
-	} else if req.AppName != "" {
-		appid, ok = f.appNameToIDMap[req.AppName]
+	var ok bool
+	if req.GetAppID() != "" {
+		appid = req.GetAppID()
+	} else if req.GetAppName() != "" {
+		appid, ok = f.appNameToIDMap[req.GetAppName()]
 		if !ok {
 			return nil, ErrInvalidAppID
 		}
@@ -111,7 +104,7 @@ func (f *FCMService) Send(ctx context.Context, request interface{}, opt ...push.
 		return f.send(ctx, appid, token, notification)
 	}
 
-	retrySend, err := RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
+	retrySend, err := RetrySend(ctx, send, req.GetToken(), so.Retry, so.RetryInterval, 100)
 	if err != nil {
 		return nil, err
 	}
@@ -155,28 +148,27 @@ func (f *FCMService) send(ctx context.Context, appid string, token string, notif
 }
 
 // checkNotification for check request message
-func (f *FCMService) checkNotification(req *notify.FCMPushNotification) error {
+func (f *FCMService) checkNotification(req push.SendRequest) error {
 	var msg string
 
 	// ignore send topic mesaage from FCM
-	if !f.IsTopic(req) && len(req.Tokens) == 0 && req.Topic == "" {
+	if !f.IsTopic(req) && len(req.GetToken()) == 0 && req.GetTopic() == "" {
 		msg = "the message must specify at least one registration ID"
 		return errors.New(msg)
 	}
 
-	if len(req.Tokens) == 0 {
+	if len(req.GetToken()) == 0 {
 		msg = "the token must not be empty"
 		return errors.New(msg)
 	}
 
-	if len(req.Tokens) > 1000 {
+	if len(req.GetToken()) > 1000 {
 		msg = "the message may specify at most 1000 registration IDs"
 		return errors.New(msg)
 	}
 
 	// ref: https://firebase.google.com/docs/cloud-messaging/http-server-ref
-	ttlSeconds := int(req.TTL.Seconds())
-	fmt.Println("ttlSeconds => ", ttlSeconds)
+	ttlSeconds := int(req.GetTTL())
 	if ttlSeconds < 0 || ttlSeconds > 2419200 {
 		msg := "the message's TimeToLive field must be an integer " +
 			"between 0 and 2419200 (4 weeks)"
@@ -186,74 +178,81 @@ func (f *FCMService) checkNotification(req *notify.FCMPushNotification) error {
 	return nil
 }
 
-func (f *FCMService) IsTopic(req *notify.FCMPushNotification) bool {
-	return req.Topic != "" && strings.HasPrefix(req.Topic, "/topics/") && req.Condition != ""
+func (f *FCMService) IsTopic(req push.SendRequest) bool {
+	return req.GetTopic() != "" && strings.HasPrefix(req.GetTopic(), "/topics/") && req.GetCondition() != ""
 }
 
 // buildAndroidNotification use for define Android notification.
 // HTTP Connection Server Reference for Android
 // https://firebase.google.com/docs/cloud-messaging/http-server-ref
-func (f *FCMService) buildAndroidNotification(req *notify.FCMPushNotification) *messaging.Message {
+func (f *FCMService) buildAndroidNotification(req push.SendRequest) *messaging.Message {
 	notification := &messaging.Message{
 		//Token:     req.Topic,
-		Topic:     req.Topic,
-		Condition: req.Condition,
+		Topic:     req.GetTopic(),
+		Condition: req.GetCondition(),
 		Android:   &messaging.AndroidConfig{},
 	}
 
-	if len(req.Tokens) > 0 {
+	if len(req.GetToken()) > 0 {
 		//notification.Token = ""
 		//notification.Token = req.Tokens[0]
 	}
 
-	if req.Category != "" {
-		notification.Android.CollapseKey = req.CollapseID
+	if req.GetCategory() != "" {
+		notification.Android.CollapseKey = req.GetCollapseID()
 	}
 
-	if req.Priority == HIGH || req.Priority == "normal" {
-		notification.Android.Priority = req.Priority
+	if req.GetPriority() == HIGH || req.GetPriority() == "normal" {
+		notification.Android.Priority = req.GetPriority()
 	}
 
 	// Add another field
-	if len(req.Data) > 0 {
-		notification.Data = req.Data
-	}
+	//if len(req.GetData()) > 0 {
+	//	var data = make(map[string]string)
+	//	for k, v := range req.GetData() {
+	//		data[k] = fmt.Sprintf("%v", v)
+	//	}
+	//	notification.Data = data
+	//}
 
-	notification.Android.TTL = &req.TTL
+	duration := time.Duration(req.GetTTL()) * time.Second
+	notification.Android.TTL = &duration
 
 	n := &messaging.Notification{}
 	isNotificationSet := false
 
-	if len(req.Content) > 0 {
+	if len(req.GetContent()) > 0 {
 		isNotificationSet = true
-		n.Body = req.Content
+		n.Body = req.GetContent()
 	}
 
-	if len(req.Title) > 0 {
+	if len(req.GetTitle()) > 0 {
 		isNotificationSet = true
-		n.Title = req.Title
+		n.Title = req.GetTitle()
 	}
 
-	if len(req.Image) > 0 {
+	if len(req.GetIcon()) > 0 {
 		isNotificationSet = true
-		n.ImageURL = req.Image
+		n.ImageURL = req.GetIcon()
 	}
 
-	if req.Sound != "" {
-		isNotificationSet = true
-		//n.Sound = req.Sound
-		notification.Android.Notification.Sound = req.Sound
-	}
+	//if req.GetSound() != "" {
+	//	isNotificationSet = true
+	//	//n.Sound = req.Sound
+	//	sound, ok := req.GetSound().(string)
+	//	if ok {
+	//		notification.Android.Notification.Sound = sound
+	//	}
+	//}
 
 	if isNotificationSet {
 		notification.Notification = n
 	}
 
 	// handle iOS apns in fcm
-
-	if len(req.Apns) > 0 {
-		// Handle iOS APNS
-	}
+	//if len(req.Apns) > 0 {
+	// Handle iOS APNS
+	//}
 
 	return notification
 }

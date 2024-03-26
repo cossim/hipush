@@ -1,13 +1,10 @@
 package main
 
 import (
-	"encoding/json"
+	"bytes"
 	"fmt"
-	"github.com/cossim/hipush/api/http/v1/dto"
 	"io/ioutil"
 	"net/http"
-	"strings"
-	"time"
 )
 
 var (
@@ -16,43 +13,29 @@ var (
 )
 
 func main() {
-	payload := dto.PushRequest{
-		//AppID:    "xxx",
-		AppName:  "cossim",
-		Platform: "xiaomi",
-		Token: []string{
-			"vAmkC65U7IthVLCyK0udEfUiXCiRAP5DXZtV2h0qt/vgo8k0foiQ8YS3VKcbPMa/",
-		},
-		Data: dto.XiaomiPushRequestData{
-			Title:         "cossim",
-			Subtitle:      "hello",
-			Content:       "hello",
-			Icon:          "",
-			TTL:           time.Minute,
-			NotifyType:    -1,
-			ScheduledTime: 0,
-			IsScheduled:   false,
-			Foreground:    true,
-			ClickAction: dto.ClickAction{
-				Action: 1,
-			},
-			Data: nil,
-		},
-		Option: dto.PushOption{
-			DryRun:        false,
-			Retry:         1,
-			RetryInterval: 1,
-		},
-	}
-
-	// Marshal the request object to JSON
-	reqBody, err := json.Marshal(payload)
-	if err != nil {
-		panic(err)
-	}
+	payload := []byte(`{
+    "platform": "xiaomi",
+    "token": [
+        "xxx"
+    ],
+    "app_id": "2882303761520159644",
+    "app_name": "cossim",
+    "data": {
+        "title": "测试标题",
+        "subtitle": "测试子标题",
+        "content": "测试内容",
+        "foreground": true
+    },
+    "option": {
+        "dry_run": true,
+		"development": false,
+        "retry": 0,
+        "retry_interval": 0
+    }
+}`)
 
 	client := &http.Client{}
-	req, err := http.NewRequest(method, url, strings.NewReader(string(reqBody)))
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(payload))
 	if err != nil {
 		fmt.Println(err)
 		return

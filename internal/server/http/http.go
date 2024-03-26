@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/cossim/hipush/api/http/v1/dto"
+	v1 "github.com/cossim/hipush/api/pb/v1"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/internal/factory"
 	"github.com/cossim/hipush/pkg/consts"
@@ -75,7 +75,7 @@ func (h *Handler) Start(ctx context.Context) error {
 }
 
 func (h *Handler) pushHandler(c *gin.Context) {
-	req := &dto.PushRequest{}
+	req := &v1.PushRequest{}
 	if err := c.ShouldBindJSON(req); err != nil {
 		h.logger.Error(err, "failed to bind request")
 		c.JSON(http.StatusBadRequest, Response{Code: http.StatusBadRequest, Msg: err.Error(), Data: nil})

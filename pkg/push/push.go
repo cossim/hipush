@@ -112,7 +112,7 @@ const (
 
 type SendFunc func(ctx context.Context, token string) (*Response, error)
 
-func RetrySend(ctx context.Context, send SendFunc, tokens []string, retry int, retryInterval int, maxConcurrent int) (*Response, error) {
+func RetrySend(ctx context.Context, send SendFunc, tokens []string, retry int32, retryInterval int32, maxConcurrent int) (*Response, error) {
 	var wg sync.WaitGroup
 	var resp = &Response{}
 	if retryInterval <= 0 {
@@ -134,7 +134,7 @@ func RetrySend(ctx context.Context, send SendFunc, tokens []string, retry int, r
 				<-MaxConcurrentPushes
 				wg.Done()
 			}()
-			for i := 0; i <= retry; i++ {
+			for i := 0; i <= int(retry); i++ {
 				res, err := send(ctx, token)
 				if err != nil || (res != nil && res.Code != 200) {
 					if err == nil {

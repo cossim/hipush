@@ -10,26 +10,22 @@ import (
 	"github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/pkg/consts"
-	"github.com/cossim/hipush/pkg/notify"
 	"github.com/cossim/hipush/pkg/status"
 	"github.com/go-logr/logr"
 	"log"
+	"time"
 )
 
 const (
 	HIGH   = "high"
 	NORMAL = "nornal"
 
-	DefaultMaxRetry = 1
-
 	DefaultAuthUrl = "https://oauth-login.cloud.huawei.com/oauth2/v3/token"
 	DefaultPushUrl = "https://push-api.cloud.huawei.com"
 )
 
 var (
-	// MaxConcurrentHuaweiPushes pool to limit the number of concurrent iOS pushes
-	MaxConcurrentHuaweiPushes                  = make(chan struct{}, 100)
-	_                         push.PushService = &HMSService{}
+	_ push.PushService = &HMSService{}
 )
 
 // HMSService 实现huawei推送，实现 PushService 接口
@@ -84,20 +80,16 @@ func NewHMSService(cfg *config.Config, logger logr.Logger) *HMSService {
 	return s
 }
 
-func (h *HMSService) Send(ctx context.Context, request interface{}, opt ...push.SendOption) (*push.SendResponse, error) {
-	req, ok := request.(*notify.HMSPushNotification)
-	if !ok {
-		return nil, errors.New("invalid request parameter")
-	}
-
+func (h *HMSService) Send(ctx context.Context, req push.SendRequest, opt ...push.SendOption) (*push.SendResponse, error) {
 	so := &push.SendOptions{}
 	so.ApplyOptions(opt)
 
 	var appid string
-	if req.AppID != "" {
-		appid = req.AppID
-	} else if req.AppName != "" {
-		appid, ok = h.appNameToIDMap[req.AppName]
+	var ok bool
+	if req.GetAppID() != "" {
+		appid = req.GetAppID()
+	} else if req.GetAppName() != "" {
+		appid, ok = h.appNameToIDMap[req.GetAppName()]
 		if !ok {
 			return nil, ErrInvalidAppID
 		}
@@ -109,7 +101,7 @@ func (h *HMSService) Send(ctx context.Context, request interface{}, opt ...push.
 		return nil, err
 	}
 
-	notification, err := h.buildNotification(req)
+	notification, err := h.buildNotification(req, so)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +114,7 @@ func (h *HMSService) Send(ctx context.Context, request interface{}, opt ...push.
 		return h.send(ctx, appid, token, notification)
 	}
 
-	resp, err := RetrySend(ctx, send, req.Tokens, so.Retry, so.RetryInterval, 100)
+	resp, err := RetrySend(ctx, send, req.GetToken(), so.Retry, so.RetryInterval, 100)
 	if err != nil {
 		return nil, err
 	}
@@ -188,16 +180,16 @@ func (h *HMSService) send(ctx context.Context, appid string, token string, notif
 	return resp, err
 }
 
-func (h *HMSService) checkNotification(req *notify.HMSPushNotification) error {
-	if len(req.Tokens) == 0 {
+func (h *HMSService) checkNotification(req push.SendRequest) error {
+	if len(req.GetToken()) == 0 {
 		return errors.New("tokens cannot be empty")
 	}
 
-	if req.Title == "" {
+	if req.GetTitle() == "" {
 		return errors.New("title cannot be empty")
 	}
 
-	if req.Content == "" {
+	if req.GetContent() == "" {
 		return errors.New("content cannot be empty")
 	}
 
@@ -206,47 +198,46 @@ func (h *HMSService) checkNotification(req *notify.HMSPushNotification) error {
 
 // HTTP Connection Server Reference for HMS
 // https://developer.huawei.com/consumer/en/doc/development/HMS-References/push-sendapi
-func (h *HMSService) buildNotification(req *notify.HMSPushNotification) (*model.MessageRequest, error) {
+func (h *HMSService) buildNotification(req push.SendRequest, so *push.SendOptions) (*model.MessageRequest, error) {
 	msgRequest := model.NewNotificationMsgRequest()
 
 	msgRequest.Message.Android = model.GetDefaultAndroid()
 
-	if len(req.Tokens) > 0 {
-		msgRequest.Message.Token = req.Tokens
+	if len(req.GetToken()) > 0 {
+		msgRequest.Message.Token = req.GetToken()
 	}
 
-	if len(req.Topic) > 0 {
-		msgRequest.Message.Topic = req.Topic
+	if len(req.GetTopic()) > 0 {
+		msgRequest.Message.Topic = req.GetTopic()
 	}
 
-	if len(req.Condition) > 0 {
-		msgRequest.Message.Condition = req.Condition
+	if len(req.GetCondition()) > 0 {
+		msgRequest.Message.Condition = req.GetCondition()
 	}
 
-	msgRequest.Message.Android.Urgency = req.Priority
-
-	if len(req.Priority) > 0 {
-		msgRequest.Message.Android.Urgency = req.Priority
+	if len(req.GetPriority()) > 0 {
+		msgRequest.Message.Android.Urgency = req.GetPriority()
 	}
 
-	if len(req.Category) > 0 {
-		msgRequest.Message.Android.Category = req.Category
+	if len(req.GetCategory()) > 0 {
+		msgRequest.Message.Android.Category = req.GetCategory()
 	}
 
-	if len(req.TTL) > 0 {
-		msgRequest.Message.Android.TTL = req.TTL
+	if req.GetTTL() > 0 {
+		duration := time.Duration(req.GetTTL()) * time.Second
+		msgRequest.Message.Android.TTL = duration.String()
 	}
 
-	if len(req.BiTag) > 0 {
-		msgRequest.Message.Android.BiTag = req.BiTag
-	}
+	//if len(req.BiTag) > 0 {
+	//	msgRequest.Message.Android.BiTag = req.BiTag
+	//}
 
-	msgRequest.Message.Android.FastAppTarget = req.FastAppTarget
+	//msgRequest.Message.Android.FastAppTarget = req.FastAppTarget
 
 	// Add data fields
-	if len(req.Data) > 0 {
-		msgRequest.Message.Data = req.Data
-	}
+	//if len(req.Data) > 0 {
+	//	msgRequest.Message.Data = req.Data
+	//}
 
 	// Notification Content
 	//if req.MessageRequest.Message.Android.Notification != nil {
@@ -263,39 +254,33 @@ func (h *HMSService) buildNotification(req *notify.HMSPushNotification) (*model.
 		}
 	}
 
-	if len(req.Content) > 0 {
+	if len(req.GetContent()) > 0 {
 		setDefaultAndroidNotification()
-		msgRequest.Message.Android.Notification.Body = req.Content
+		msgRequest.Message.Android.Notification.Body = req.GetContent()
 	}
 
-	if len(req.Title) > 0 {
+	if len(req.GetTitle()) > 0 {
 		setDefaultAndroidNotification()
-		msgRequest.Message.Android.Notification.Title = req.Title
+		msgRequest.Message.Android.Notification.Title = req.GetTitle()
 	}
 
-	if len(req.Image) > 0 {
+	if len(req.GetIcon()) > 0 {
 		setDefaultAndroidNotification()
-		msgRequest.Message.Android.Notification.Image = req.Image
+		msgRequest.Message.Android.Notification.Image = req.GetIcon()
 	}
 
-	if v, ok := req.Sound.(string); ok && len(v) > 0 {
-		setDefaultAndroidNotification()
-		msgRequest.Message.Android.Notification.Sound = v
-	} else if msgRequest.Message.Android.Notification != nil {
-		msgRequest.Message.Android.Notification.DefaultSound = true
-	}
+	//if v, ok := req.Sound.(string); ok && len(v) > 0 {
+	//	setDefaultAndroidNotification()
+	//	msgRequest.Message.Android.Notification.Sound = v
+	//} else if msgRequest.Message.Android.Notification != nil {
+	//	msgRequest.Message.Android.Notification.DefaultSound = true
+	//}
+	msgRequest.Message.Android.Notification.DefaultSound = true
 
-	if req.Development {
+	if so.Development {
 		msgRequest.Message.Android.TargetUserType = 1
 	}
 
-	m, err := json.Marshal(msgRequest)
-	if err != nil {
-		log.Printf("Failed to marshal the default message! Error is " + err.Error())
-		return nil, err
-	}
-
-	log.Printf("Default message is %s", string(m))
 	return msgRequest, nil
 }
 

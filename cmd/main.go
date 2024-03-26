@@ -9,7 +9,6 @@ import (
 	h "github.com/cossim/hipush/internal/server/http"
 	"github.com/cossim/hipush/pkg/push"
 	"github.com/cossim/hipush/pkg/status"
-	"github.com/go-co-op/gocron/v2"
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
 	"log"
@@ -44,10 +43,10 @@ func main() {
 
 	zapLogger := zap.NewExample()
 	logger := zapr.NewLogger(zapLogger)
-	scheduler, err := gocron.NewScheduler()
-	if err != nil {
-		panic(err)
-	}
+	//scheduler, err := gocron.NewScheduler()
+	//if err != nil {
+	//	panic(err)
+	//}
 
 	pushServiceFactory := factory.NewPushServiceFactory()
 	if err := pushServiceFactory.Register(
@@ -56,7 +55,7 @@ func main() {
 		pushServiceFactory.WithPushService(push.NewHMSService(cfg, logger)),
 		pushServiceFactory.WithPushService(push.NewXiaomiService(cfg, logger)),
 		pushServiceFactory.WithPushService(push.NewOppoService(cfg, logger)),
-		pushServiceFactory.WithPushService(push.NewVivoService(cfg, logger, scheduler)),
+		pushServiceFactory.WithPushService(push.NewVivoService(cfg, logger)),
 		pushServiceFactory.WithPushService(push.NewMeizuService(cfg, logger)),
 		pushServiceFactory.WithPushService(push.NewHonorService(cfg, logger)),
 	); err != nil {

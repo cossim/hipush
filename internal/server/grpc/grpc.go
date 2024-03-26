@@ -5,16 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/cossim/hipush/api/grpc/v1"
+	"github.com/cossim/hipush/api/pb/v1"
 	push2 "github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/internal/factory"
-	"github.com/cossim/hipush/pkg/consts"
-	"github.com/cossim/hipush/pkg/notify"
-	"github.com/cossim/hipush/pkg/push"
 	"github.com/cossim/hipush/pkg/status"
 	"github.com/go-logr/logr"
-	"github.com/golang/protobuf/jsonpb"
 	"google.golang.org/grpc"
 	"net"
 )
@@ -29,7 +25,7 @@ type Handler struct {
 func NewHandler(cfg *config.Config, logger logr.Logger, factory *factory.PushServiceFactory) *Handler {
 	return &Handler{
 		cfg:     cfg,
-		logger:  logger.WithValues("server", "grpc"),
+		logger:  logger.WithValues("server", "pb"),
 		factory: factory,
 	}
 }
@@ -69,7 +65,7 @@ func (h *Handler) Start(ctx context.Context) error {
 
 func (h *Handler) Push(ctx context.Context, req *v1.PushRequest) (*v1.PushResponse, error) {
 	resp := &v1.PushResponse{}
-	h.logger.Info("Received push request", "platform", req.Platform, "tokens", req.Tokens, "req", req)
+	h.logger.Info("Received push request", "platform", req.Platform, "tokens", req.Token, "req", req)
 
 	status.StatStorage.AddGrpcTotal(1)
 
@@ -80,16 +76,48 @@ func (h *Handler) Push(ctx context.Context, req *v1.PushRequest) (*v1.PushRespon
 		return resp, err
 	}
 
-	r, err := h.getPushRequest(req)
+	dataBytes, err := json.Marshal(req.Data)
 	if err != nil {
-		status.StatStorage.AddGrpcFailed(1)
-		h.logger.Error(err, "failed to get push request")
+		h.logger.Error(err, "Failed to marshal data")
+		return resp, err
+	}
+
+	fmt.Println("dataBytes => ", dataBytes)
+
+	var r v1.APNsPushRequest
+	marshalJSON, err := req.Data.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(marshalJSON, &r); err != nil {
+		h.logger.Error(err, "Failed to unmarshal data")
+		return resp, err
+	}
+
+	if err := h.validatePushRequest(&r); err != nil {
 		return nil, err
 	}
 
-	_, err = service.Send(ctx, r, &push2.SendOptions{
-		DryRun: req.Option.DryRun,
-		Retry:  int(req.Option.Retry),
+	r.Meta = &v1.Meta{
+		AppID:   req.AppID,
+		AppName: req.AppName,
+		Token:   req.Token,
+	}
+
+	option := v1.PushOption{}
+	if req.Option != nil {
+		option.Development = req.Option.Development
+		option.DryRun = req.Option.DryRun
+		option.Retry = req.Option.Retry
+		option.RetryInterval = req.Option.RetryInterval
+	}
+
+	fmt.Println("r => ", r.String())
+
+	_, err = service.Send(ctx, &r, &push2.SendOptions{
+		DryRun:        option.DryRun,
+		Retry:         option.Retry,
+		RetryInterval: option.RetryInterval,
 	})
 	if err != nil {
 		status.StatStorage.AddGrpcFailed(1)
@@ -103,101 +131,33 @@ func (h *Handler) Push(ctx context.Context, req *v1.PushRequest) (*v1.PushRespon
 	return resp, nil
 }
 
-func (h *Handler) getPushRequest(req *v1.PushRequest) (push.PushRequest, error) {
-	badge := int(req.Badge)
-
-	data := make(map[string]interface{})
-	if req.Data != nil {
-		jsonStr, err := (&jsonpb.Marshaler{}).MarshalToString(req.Data)
-		if err != nil {
-			return nil, err
-		}
-		if err = json.Unmarshal([]byte(jsonStr), &data); err != nil {
-			return nil, err
-		}
-	}
-
-	alert := notify.Alert{}
-	if req.Alert != nil {
-		alert = notify.Alert{
-			Action:       req.Alert.Action,
-			ActionLocKey: req.Alert.ActionLocKey,
-			Body:         req.Alert.Body,
-			LaunchImage:  req.Alert.LaunchImage,
-			LocArgs:      req.Alert.LocArgs,
-			LocKey:       req.Alert.LocKey,
-			Title:        req.Alert.Title,
-			Subtitle:     req.Alert.Subtitle,
-			TitleLocArgs: req.Alert.TitleLocArgs,
-			TitleLocKey:  req.Alert.TitleLocKey,
-		}
-	}
-
-	return &notify.ApnsPushNotification{
-		AppID:            req.AppID,
-		ApnsID:           req.AppID,
-		Tokens:           req.Tokens,
-		Title:            req.Title,
-		Content:          req.Message,
-		Topic:            req.Topic,
-		Category:         req.Category,
-		Sound:            req.Sound,
-		Alert:            alert,
-		Badge:            &badge,
-		ThreadID:         req.ThreadID,
-		Data:             data,
-		PushType:         req.PushType,
-		Priority:         string(req.Priority),
-		ContentAvailable: req.ContentAvailable,
-		MutableContent:   req.MutableContent,
-		Development:      req.Development,
-	}, nil
-}
-
-func (h *Handler) validatePushRequest(req *v1.PushRequest) error {
+func (h *Handler) validatePushRequest(req *v1.APNsPushRequest) error {
 	if req == nil {
 		return errors.New("request is nil")
 	}
 
-	if !consts.Platform(req.Platform).IsValid() {
-		return errors.New("invalid platform")
+	//if !consts.Platform(req.Platform).IsValid() {
+	//	return errors.New("invalid platform")
+	//
+	//}
 
-	}
-
-	if len(req.Tokens) == 0 {
-		return errors.New("tokens are required")
-	}
+	//if len(req.Token) == 0 {
+	//	return errors.New("tokens are required")
+	//}
 
 	// 检查其他必填字段
 	if req.Title == "" {
 		return errors.New("title is required")
 	}
 
-	if req.Message == "" {
+	if req.Content == "" {
 		return errors.New("message is required")
 	}
 
-	// 检查 Alert 字段
-	if req.Alert != nil {
-		if err := h.validateAlert(req.Alert); err != nil {
-			return err
-		}
-	}
-
 	// 检查 Data 字段
-	if req.Data == nil {
-		//return errors.New("data is required")
-	}
+	//if req.Data == nil {
+	//return errors.New("data is required")
+	//}
 
 	return nil
-}
-
-func (h *Handler) validateAlert(alert *v1.Alert) error {
-	// TODO 检查 Alert 字段的必填参数
-	return nil
-}
-
-func (h *Handler) mustEmbedUnimplementedPushServiceServer() {
-	//TODO implement me
-	panic("implement me")
 }
