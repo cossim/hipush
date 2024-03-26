@@ -11,6 +11,7 @@ on:
       - 'cmd/**.go'
       - 'config/**.go'
       - 'internal/**.go'
+      - 'pkg/**.go'
 jobs:
   build_hipush:
     runs-on: ubuntu-latest

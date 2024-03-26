@@ -1,7 +1,7 @@
 PKG := "github.com/cossim/hipush"
 IMG ?= hub.hitosea.com/cossim/hipush:latest
 PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/)
-PLATFORM ?= linux/amd64  # 默认平台参数为 linux/amd64
+#PLATFORM ?= linux/amd64  # 默认平台参数为 linux/amd64
 
 .PHONY: dep
 dep: ## Get the dependencies
@@ -40,7 +40,7 @@ gen: ## generate protobuf file
 # (i.e. docker build --platform linux/arm64 ). However, you must enable docker buildKit for it.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 docker-build: dep test ## Build docker image with the manager.
-	docker build --no-cache --platform ${PLATFORM} -t "${IMG}" .
+	docker build -t "${IMG}" .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
