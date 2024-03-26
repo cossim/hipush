@@ -12,12 +12,12 @@ import (
 	vp "github.com/cossim/vivo-push"
 	"github.com/go-logr/logr"
 	"log"
+	"net/url"
 	"strings"
 )
 
 var (
-	// MaxConcurrentVivoPushes pool to limit the number of concurrent iOS pushes
-	MaxConcurrentVivoPushes = make(chan struct{}, 100)
+	_ push.PushService = &VivoService{}
 )
 
 // VivoService 实现vivo推送，实现 PushService 接口
@@ -124,8 +124,6 @@ func (v *VivoService) send(appid string, token string, notification *vp.Message)
 
 	v.status.AddVivoTotal(1)
 
-	fmt.Println("notification Category => ", notification.Category)
-
 	resp := &Response{Code: Fail}
 	notification.RegId = token
 	res, err := client.Send(notification, token)
@@ -165,23 +163,23 @@ func (v *VivoService) buildNotification(req push.SendRequest, so *push.SendOptio
 	}
 
 	// 检查 ClickAction 是否为空，为空则使用默认值
-	//clickAction := req.GetClickAction()
-	//if clickAction == nil {
-	//	clickAction.Action = 1
-	//}
-	//
-	//if clickAction.Action == 0 {
-	//	// 设置默认的 ClickAction
-	//	clickAction.Action = 1
-	//}
-	//
-	//// 检查 URL 是否为合法 URL
-	//if clickAction.Action == 2 {
-	//	_, err := url.Parse(clickAction.Url)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//}
+	clickAction := req.GetClickAction()
+	if clickAction == nil {
+		clickAction.Action = 1
+	}
+
+	if clickAction.Action == 0 {
+		// 设置默认的 ClickAction
+		clickAction.Action = 1
+	}
+
+	// 检查 URL 是否为合法 URL
+	if clickAction.Action == 2 {
+		_, err := url.Parse(clickAction.Url)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	var notifyType = req.GetNotifyType()
 	// 检查 NotifyType 是否为有效值
@@ -203,16 +201,25 @@ func (v *VivoService) buildNotification(req push.SendRequest, so *push.SendOptio
 		ttl = 60
 	}
 
+	data := make(map[string]string)
+	for key, value := range req.GetCustomData() {
+		if strValue, ok := value.(string); ok {
+			data[key] = strValue
+		} else {
+			data[key] = fmt.Sprintf("%v", value)
+		}
+	}
+
 	message := &vp.Message{
-		RegId:       strings.Join(req.GetToken(), ","),
-		NotifyType:  int(notifyType),
-		Title:       req.GetTitle(),
-		Content:     req.GetContent(),
-		TimeToLive:  ttl,
-		SkipType:    1,
-		SkipContent: "",
-		NetworkType: -1,
-		//ClientCustomMap: req.Data,
+		RegId:           strings.Join(req.GetToken(), ","),
+		NotifyType:      int(notifyType),
+		Title:           req.GetTitle(),
+		Content:         req.GetContent(),
+		TimeToLive:      ttl,
+		SkipType:        1,
+		SkipContent:     req.GetClickAction().Url,
+		NetworkType:     -1,
+		ClientCustomMap: data,
 		//Extra:           req.Data.ExtraMap(),
 		//RequestId:      req.RequestId,
 		//NotifyID:       req.NotifyID,

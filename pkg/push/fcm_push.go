@@ -202,7 +202,7 @@ func (f *FCMService) buildAndroidNotification(req push.SendRequest) *messaging.M
 		notification.Android.CollapseKey = req.GetCollapseID()
 	}
 
-	if req.GetPriority() == HIGH || req.GetPriority() == "normal" {
+	if req.GetPriority() == "high" || req.GetPriority() == "normal" {
 		notification.Android.Priority = req.GetPriority()
 	}
 

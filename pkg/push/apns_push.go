@@ -17,19 +17,15 @@ import (
 	"log"
 	"net"
 	"path/filepath"
-	"sync"
 	"time"
 )
 
 var (
-	// MaxConcurrentIOSPushes pool to limit the number of concurrent iOS pushes
-	MaxConcurrentIOSPushes chan struct{}
+	_ push.PushService = &APNsService{}
 
 	idleConnTimeout = 90 * time.Second
 	tlsDialTimeout  = 20 * time.Second
 	tcpKeepAlive    = 60 * time.Second
-
-	doOnce sync.Once
 )
 
 const (
@@ -103,10 +99,6 @@ func NewAPNsService(cfg *config.Config, logger logr.Logger) *APNsService {
 			panic(err)
 		}
 	}
-
-	doOnce.Do(func() {
-		MaxConcurrentIOSPushes = make(chan struct{}, 100)
-	})
 
 	return s
 }
@@ -249,7 +241,7 @@ func (a *APNsService) buildNotification(req push.SendRequest) (*apns2.Notificati
 
 	if req.GetPriority() == "normal" {
 		notification.Priority = apns2.PriorityLow
-	} else if req.GetPriority() == HIGH {
+	} else if req.GetPriority() == "high" {
 		notification.Priority = apns2.PriorityHigh
 	}
 

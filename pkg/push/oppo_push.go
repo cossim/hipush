@@ -11,11 +11,12 @@ import (
 	"github.com/cossim/hipush/pkg/consts"
 	"github.com/cossim/hipush/pkg/status"
 	"github.com/go-logr/logr"
+	"github.com/golang/protobuf/jsonpb"
 	"log"
 )
 
 var (
-	MaxConcurrentOppoPushes = make(chan struct{}, 100)
+	_ push.PushService = &OppoService{}
 )
 
 // OppoService 实现oppo推送，实现 PushService 接口
@@ -184,16 +185,21 @@ func (o *OppoService) buildNotification(req push.SendRequest) (*op.Message, erro
 	m := op.NewMessage(req.GetTitle(), req.GetContent()).
 		//SetSubTitle(req.Subtitle).
 		SetTargetType(2)
-	//if req.ClickAction != nil {
-	//	if req.ClickAction.Action == 1 || req.ClickAction.Action == 4 {
-	//		m.SetClickActionActivity(req.ClickAction.Activity)
-	//	}
-	//	if req.ClickAction.Action == 2 {
-	//		m.SetClickActionUrl(req.ClickAction.Url)
-	//	}
-	//	m.SetClickActionType(req.ClickAction.Action)
-	//	m.SetActionParameters(req.ClickAction.Parameters)
-	//}
+	if req.GetClickAction() != nil {
+		if req.GetClickAction().Action == 1 || req.GetClickAction().Action == 4 {
+			m.SetClickActionActivity(req.GetClickAction().Activity)
+		}
+		if req.GetClickAction().Action == 2 {
+			m.SetClickActionUrl(req.GetClickAction().Url)
+		}
+		m.SetClickActionType(int(req.GetClickAction().Action))
+		marshaler := &jsonpb.Marshaler{}
+		jsonString, err := marshaler.MarshalToString(req.GetClickAction().Parameters)
+		if err != nil {
+			return nil, err
+		}
+		m.SetActionParameters(jsonString)
+	}
 
 	return m, nil
 }

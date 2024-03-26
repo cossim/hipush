@@ -1,8 +1,8 @@
 package v1
 
-import "github.com/cossim/hipush/api/push"
-
-var _ push.SendRequest = &VivoPushRequestData{}
+func (x *VivoPushRequestData) GetCustomData() map[string]interface{} {
+	return StructPBToMap(x.Data)
+}
 
 func (x *VivoPushRequestData) GetAppID() string {
 	return x.Meta.AppID

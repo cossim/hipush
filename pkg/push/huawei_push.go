@@ -17,9 +17,6 @@ import (
 )
 
 const (
-	HIGH   = "high"
-	NORMAL = "nornal"
-
 	DefaultAuthUrl = "https://oauth-login.cloud.huawei.com/oauth2/v3/token"
 	DefaultPushUrl = "https://push-api.cloud.huawei.com"
 )
@@ -235,9 +232,12 @@ func (h *HMSService) buildNotification(req push.SendRequest, so *push.SendOption
 	//msgRequest.Message.Android.FastAppTarget = req.FastAppTarget
 
 	// Add data fields
-	//if len(req.Data) > 0 {
-	//	msgRequest.Message.Data = req.Data
-	//}
+	if len(req.GetCustomData()) > 0 {
+		jsonBytes, err := json.Marshal(req.GetCustomData())
+		if err == nil {
+			msgRequest.Message.Data = string(jsonBytes)
+		}
+	}
 
 	// Notification Content
 	//if req.MessageRequest.Message.Android.Notification != nil {

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-import "google/protobuf/any.proto";
+//import "google/protobuf/any.proto";
 import "google/protobuf/descriptor.proto";
 //import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/struct.proto";
@@ -66,8 +66,7 @@ message PushResponse {
 
   // @inject_tag: json:"data"
   google.protobuf.Struct Data = 3;
-//  bytes Data = 3[(gogoproto.customtype) = "InterfaceType", (gogoproto.nullable) = false]; // InterfaceType为自定义类型
-//  bytes Data = 3;
+  // bytes Data = 3[(gogoproto.customtype) = "InterfaceType", (gogoproto.nullable) = false]; // InterfaceType为自定义类型
 }
 
 message Meta {
@@ -158,22 +157,25 @@ message APNsPushRequest {
   // @inject_tag: json:"content_available"
   bool ContentAvailable = 14;
 
+  // @inject_tag: json:"category"
+  string Category = 15;
+
+  ClickAction ClickAction = 16;
+
   // Sound sets the aps sound on the payload.
   // This will play a sound from the app bundle, or the default sound otherwise.
   // https://developer.apple.com/documentation/usernotifications/generating-a-remote-notification Table 3. Keys to include in the sound dictionary
   // @inject_tag: json:"sound"
-  google.protobuf.Struct Sound = 15;
+  google.protobuf.Struct Sound = 17;
   //  bytes Sound = 15[(gogoproto.customtype) = "InterfaceType", (gogoproto.nullable) = false]; // InterfaceType为自定义类型
 
   // Data sets a custom key and value on the payload.
   // This will add custom key/value data to the notification payload at root level.
 //  map<string, google.protobuf.Any> data = 15;
   // @inject_tag: json:"data"
-  google.protobuf.Struct Data = 16;
+  google.protobuf.Struct Data = 18;
 //  map<string, bytes> Data = 16[(gogoproto.customtype) = "InterfaceType", (gogoproto.nullable) = false]; // InterfaceType为自定义类型
 
-  // @inject_tag: json:"category"
-  string Category = 17;
 }
 
 
@@ -218,9 +220,11 @@ message AndroidPushRequestData {
   // @inject_tag: json:"icon"
   string Icon = 10;
 
+  ClickAction ClickAction = 11;
+
   // Data Additional Custom Parameters
   // @inject_tag: json:"data"
-  map<string, string> Data = 11;
+  google.protobuf.Struct Data = 12;
 }
 
 message HuaweiPushRequestData {
@@ -266,8 +270,13 @@ message HuaweiPushRequestData {
   bool Foreground = 9;
 
   ClickAction ClickAction = 10;
+
   // @inject_tag: json:"badge"
   BadgeNotification Badge = 11;
+
+  // Data Additional Custom Parameters
+  // @inject_tag: json:"data"
+  google.protobuf.Struct Data = 12;
 }
 
 // XiaomiPushRequestData
@@ -319,8 +328,9 @@ message XiaomiPushRequestData {
   // @inject_tag: json:"click_action"
   ClickAction ClickAction = 9;
 
-  // 附加的自定义参数
-  //  Data map[string]string `json:"data,omitempty"`
+  // Data Additional Custom Parameters
+  // @inject_tag: json:"data"
+  google.protobuf.Struct Data = 10;
 }
 
 message OppoPushRequestData {
@@ -363,7 +373,7 @@ message OppoPushRequestData {
 
   // Data Additional Custom Parameters
   // @inject_tag: json:"data"
-  map<string, string> Data = 10;
+  google.protobuf.Struct Data = 10;
 }
 
 // VivoPushNotification
@@ -403,7 +413,7 @@ message VivoPushRequestData {
 
   // Data Additional Custom Parameters
   // @inject_tag: json:"data"
-  map<string, string> Data = 12;
+  google.protobuf.Struct Data = 12;
 }
 
 message ClickAction {
@@ -422,7 +432,7 @@ message ClickAction {
 
   // Parameters represent the parameters appended to the URL after the URL redirection.
   // @inject_tag: json:"parameters"
-  map<string, google.protobuf.Any> Parameters = 4;
+  google.protobuf.Struct Parameters = 4;
 }
 
 // MeizuPushNotification
@@ -466,7 +476,7 @@ message MeizuPushRequestData {
 
   // Data Additional Custom Parameters
   // @inject_tag: json:"data"
-  map<string, string> Data = 11;
+  google.protobuf.Struct Data = 11;
 }
 
 message HonorPushRequestData {
@@ -516,7 +526,7 @@ message HonorPushRequestData {
 
   // 附加的自定义参数
   // @inject_tag: json:"data"
-  map<string, string> Data = 12;
+  google.protobuf.Struct Data = 12;
 }
 
 message BadgeNotification {

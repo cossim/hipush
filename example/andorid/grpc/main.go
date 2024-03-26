@@ -3,9 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/jsonpb"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/types/known/structpb"
 	"log"
 
 	"github.com/cossim/hipush/api/pb/v1"
@@ -23,7 +21,7 @@ func main() {
 
 	ctx := context.Background()
 
-	ap := &v1.AndroidPushRequestData{
+	r := &v1.AndroidPushRequestData{
 		Title:      "cossim",
 		Content:    "hello",
 		Topic:      "",
@@ -36,14 +34,7 @@ func main() {
 		Data:       nil,
 	}
 
-	marshaler := &jsonpb.Marshaler{}
-	jsonString, err := marshaler.MarshalToString(ap)
-	if err != nil {
-		log.Fatalf("Failed to marshal struct to JSON: %v", err)
-	}
-
-	structValue := &structpb.Struct{}
-	err = jsonpb.UnmarshalString(jsonString, structValue)
+	data, err := v1.ToStructPB(r)
 	if err != nil {
 		log.Fatalf("Failed to unmarshal JSON to structpb.Struct: %v", err)
 	}
@@ -53,7 +44,7 @@ func main() {
 		AppName:  "cossim",
 		Platform: "android",
 		Token:    []string{"xxx"},
-		Data:     structValue,
+		Data:     data,
 		Option:   nil,
 	}
 

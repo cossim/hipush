@@ -1,13 +1,8 @@
 package v1
 
-import (
-	"github.com/cossim/hipush/api/push"
-	"github.com/sideshow/apns2"
-	"github.com/sideshow/apns2/payload"
-	"time"
-)
-
-var _ push.SendRequest = &APNsPushRequest{}
+func (m *APNsPushRequest) GetCustomData() map[string]interface{} {
+	return StructPBToMap(m.Data)
+}
 
 func (m *APNsPushRequest) GetNotifyType() int32 {
 	return 0
@@ -39,95 +34,6 @@ func (m *APNsPushRequest) GetIcon() string {
 
 func (m *APNsPushRequest) GetForeground() bool {
 	return true
-}
-
-func (m *APNsPushRequest) BuildNotification(req push.SendRequest) (*apns2.Notification, error) {
-	topic := req.GetTopic()
-	if topic == "" {
-		topic = req.GetAppID()
-	}
-	notification := &apns2.Notification{
-		ApnsID:     req.GetMessageID(),
-		Topic:      topic,
-		CollapseID: req.GetCollapseID(),
-	}
-
-	if req.GetTTL() != 0 {
-		notification.Expiration = time.Unix(req.GetTTL(), 0)
-	}
-
-	if req.GetPriority() == "normal" {
-		notification.Priority = apns2.PriorityLow
-	} else if req.GetPriority() == "high" {
-		notification.Priority = apns2.PriorityHigh
-	}
-
-	//if len(req.PushType) > 0 {
-	//	notification.PushType = apns2.EPushType(req.PushType)
-	//}
-
-	payload := payload.NewPayload()
-
-	// add alert object if message length > 0 and title is empty
-	if len(req.GetContent()) > 0 && req.GetTitle() == "" {
-		payload.Alert(req.GetContent())
-	}
-
-	// zero value for clear the badge on the app icon.
-	//if req.Badge != nil && *req.Badge >= 0 {
-	//	payload.Badge(*req.Badge)
-	//}
-
-	if req.GetMutableContent() {
-		payload.MutableContent()
-	}
-
-	//switch req.GetSound().(type) {
-	//// from http request binding
-	//case map[string]interface{}:
-	//	result := &Sound{}
-	//	_ = mapstructure.Decode(req.GetSound(), &result)
-	//	payload.Sound(result)
-	//// from http request binding for non critical alerts
-	//case string:
-	//	payload.Sound(req.GetSound())
-	//case Sound:
-	//	payload.Sound(req.GetSound())
-	//}
-
-	//if len(req.SoundName) > 0 {
-	//	payload.SoundName(req.SoundName)
-	//}
-	//
-	//if req.SoundVolume > 0 {
-	//	payload.SoundVolume(req.SoundVolume)
-	//}
-
-	if req.GetContentAvailable() {
-		payload.ContentAvailable()
-	}
-
-	//if len(req.URLArgs) > 0 {
-	//	payload.URLArgs(req.URLArgs)
-	//}
-
-	//if len(req.ThreadID) > 0 {
-	//	payload.ThreadID(req.ThreadID)
-	//}
-
-	//for k, v := range req.GetData() {
-	//	payload.Custom(k, v)
-	//}
-
-	payload.AlertTitle(req.GetTitle())
-	payload.AlertBody(req.GetContent())
-	payload.Category(req.GetCategory())
-
-	//payload = iosAlertDictionary(payload, req)
-
-	notification.Payload = payload
-
-	return notification, nil
 }
 
 // Sound sets the aps sound on the payload.

@@ -1,8 +1,8 @@
 package v1
 
-import "github.com/cossim/hipush/api/push"
-
-var _ push.SendRequest = &AndroidPushRequestData{}
+func (x *AndroidPushRequestData) GetCustomData() map[string]interface{} {
+	return StructPBToMap(x.Data)
+}
 
 func (x *AndroidPushRequestData) GetNotifyType() int32 {
 	return 0

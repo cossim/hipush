@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	mzp "github.com/cossim/go-meizu-push-sdk"
+	v1 "github.com/cossim/hipush/api/pb/v1"
 	"github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/pkg/consts"
@@ -14,7 +15,7 @@ import (
 )
 
 var (
-	MaxConcurrentMeizuPushes = make(chan struct{}, 100)
+	_ push.PushService = &MeizuService{}
 )
 
 // MeizuService 实现魅族推送，实现 PushService 接口
@@ -125,45 +126,6 @@ func (m *MeizuService) send(appid string, token string, message string) (*Respon
 	}
 
 	return resp, err
-
-	//var es []error
-	//
-	//for _, token := range tokens {
-	//	// occupy push slot
-	//	MaxConcurrentXiaomiPushes <- struct{}{}
-	//	wg.Add(1)
-	//	m.status.AddMeizuTotal(1)
-	//	go func(notification string, token string) {
-	//		defer func() {
-	//			// free push slot
-	//			<-MaxConcurrentXiaomiPushes
-	//			wg.Done()
-	//		}()
-	//
-	//		fmt.Println("notification => ", notification)
-	//		res := pushFunc(token, notification)
-	//		if res.GetCode() != 200 {
-	//			es = append(es, errors.New(res.GetMessage()))
-	//			log.Printf("oppo send error: %s", res.GetMessage())
-	//			// 记录失败的 Token
-	//			newTokens = append(newTokens, token)
-	//			m.status.AddMeizuFailed(1)
-	//		} else {
-	//			log.Printf("oppo send success code: %v msg: %s", res.GetCode(), res.GetMessage())
-	//			m.status.AddMeizuSuccess(1)
-	//		}
-	//	}(message, token)
-	//}
-	//wg.Wait()
-	//if len(es) > 0 {
-	//	var errorStrings []string
-	//	for _, err := range es {
-	//		errorStrings = append(errorStrings, err.Error())
-	//	}
-	//	allErrorsString := strings.Join(errorStrings, ", ")
-	//	return nil, errors.New(allErrorsString)
-	//}
-	//return newTokens, nil
 }
 
 func (m *MeizuService) checkNotification(req push.SendRequest) error {
@@ -190,12 +152,12 @@ func (m *MeizuService) buildNotification(req push.SendRequest) (string, error) {
 	msg := mzp.BuildNotificationMessage()
 	msg.NoticeBarInfo.Title = req.GetTitle()
 	msg.NoticeBarInfo.Content = req.GetContent()
-	//msg.ClickTypeInfo = mzp.ClickTypeInfo{
-	//	ClickType:  req.ClickAction.Action,
-	//	Url:        req.ClickAction.Url,
-	//	Parameters: req.ClickAction.Parameters,
-	//	Activity:   req.ClickAction.Activity,
-	//}
+	msg.ClickTypeInfo = mzp.ClickTypeInfo{
+		ClickType:  int(req.GetClickAction().Action),
+		Url:        req.GetClickAction().Url,
+		Parameters: v1.StructPBToMap(req.GetClickAction().Parameters),
+		Activity:   req.GetClickAction().Activity,
+	}
 
 	//offLine := 0
 	//if req.OffLine {

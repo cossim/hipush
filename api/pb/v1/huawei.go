@@ -1,8 +1,8 @@
 package v1
 
-import "github.com/cossim/hipush/api/push"
-
-var _ push.SendRequest = &HuaweiPushRequestData{}
+func (x *HuaweiPushRequestData) GetCustomData() map[string]interface{} {
+	return StructPBToMap(x.Data)
+}
 
 func (x *HuaweiPushRequestData) GetNotifyType() int32 {
 	return 0

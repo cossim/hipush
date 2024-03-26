@@ -2,6 +2,7 @@ package push
 
 import (
 	"context"
+	v1 "github.com/cossim/hipush/api/pb/v1"
 )
 
 type TaskObjectList interface {
@@ -49,10 +50,10 @@ type Message interface {
 	GetMutableContent() bool
 	GetContentAvailable() bool
 	GetForeground() bool
-	//GetClickAction() *v1.ClickAction
+	GetClickAction() *v1.ClickAction
 	GetNotifyType() int32
 	//GetSound() interface{}
-	//GetData() map[string]interface{}
+	GetCustomData() map[string]interface{}
 }
 
 type Meta interface {

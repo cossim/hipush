@@ -15,8 +15,7 @@ import (
 )
 
 var (
-	// MaxConcurrentHonorPushes pool to limit the number of concurrent iOS pushes
-	MaxConcurrentHonorPushes = make(chan struct{}, 100)
+	_ push.PushService = &HonorService{}
 )
 
 // HonorService 荣耀推送，实现了 PushService 接口

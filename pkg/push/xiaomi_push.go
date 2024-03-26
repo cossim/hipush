@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	MaxConcurrentXiaomiPushes = make(chan struct{}, 100)
+	_ push.PushService = &XiaomiPushService{}
 )
 
 // XiaomiPushService 小米推送 实现 PushService 接口
@@ -190,9 +190,9 @@ func (x *XiaomiPushService) checkNotification(req push.SendRequest) error {
 func (x *XiaomiPushService) buildNotification(req push.SendRequest) (*xp.Message, error) {
 	//msg := xp.NewAndroidMessage(req.Title, req.Content).SetPayload("this is payload1")
 	msg := xp.NewAndroidMessage(req.GetTitle(), req.GetContent())
-	//if req.NotifyType != 0 {
-	//	msg.SetNotifyType(int32(req.NotifyType))
-	//}
+	if req.GetNotifyType() != 0 {
+		msg.SetNotifyType(req.GetNotifyType())
+	}
 
 	if req.GetTTL() != 0 {
 		msg.SetTimeToLive(req.GetTTL())

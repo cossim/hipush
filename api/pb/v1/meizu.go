@@ -1,8 +1,8 @@
 package v1
 
-import "github.com/cossim/hipush/api/push"
-
-var _ push.SendRequest = &MeizuPushRequestData{}
+func (x *MeizuPushRequestData) GetCustomData() map[string]interface{} {
+	return StructPBToMap(x.Data)
+}
 
 func (x *MeizuPushRequestData) GetAppID() string {
 	return x.Meta.AppID

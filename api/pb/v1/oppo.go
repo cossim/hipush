@@ -1,8 +1,8 @@
 package v1
 
-import "github.com/cossim/hipush/api/push"
-
-var _ push.SendRequest = &OppoPushRequestData{}
+func (x *OppoPushRequestData) GetCustomData() map[string]interface{} {
+	return StructPBToMap(x.Data)
+}
 
 func (x *OppoPushRequestData) GetAppID() string {
 	return x.Meta.AppID
