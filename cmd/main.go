@@ -77,7 +77,6 @@ func main() {
 			}
 		}()
 	}
-
 	if cfg.GRPC.Enabled {
 		wg.Add(1)
 		go func() {

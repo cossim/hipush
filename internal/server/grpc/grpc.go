@@ -9,6 +9,7 @@ import (
 	push2 "github.com/cossim/hipush/api/push"
 	"github.com/cossim/hipush/config"
 	"github.com/cossim/hipush/internal/factory"
+	"github.com/cossim/hipush/pkg/consts"
 	"github.com/cossim/hipush/pkg/status"
 	"github.com/go-logr/logr"
 	"google.golang.org/grpc"
@@ -67,11 +68,8 @@ func (h *Handler) Push(ctx context.Context, req *v1.PushRequest) (*v1.PushRespon
 	resp := &v1.PushResponse{}
 	h.logger.Info("Received push request", "platform", req.Platform, "tokens", req.Token, "req", req)
 
-	status.StatStorage.AddGrpcTotal(1)
-
 	service, err := h.factory.GetPushService(req.Platform)
 	if err != nil {
-		status.StatStorage.AddGrpcFailed(1)
 		h.logger.Error(err, "failed to create push service")
 		return resp, err
 	}
@@ -84,7 +82,34 @@ func (h *Handler) Push(ctx context.Context, req *v1.PushRequest) (*v1.PushRespon
 
 	fmt.Println("dataBytes => ", dataBytes)
 
-	var r v1.APNsPushRequest
+	meta := &v1.Meta{
+		AppID:   req.AppID,
+		AppName: req.AppName,
+		Token:   req.Token,
+	}
+
+	var r push2.SendRequest
+	switch consts.Platform(req.Platform) {
+	case consts.PlatformIOS:
+		r = &v1.APNsPushRequest{Meta: meta}
+	case consts.PlatformAndroid:
+		r = &v1.AndroidPushRequestData{Meta: meta}
+	case consts.PlatformHuawei:
+		r = &v1.HuaweiPushRequestData{Meta: meta}
+	case consts.PlatformXiaomi:
+		r = &v1.XiaomiPushRequestData{Meta: meta}
+	case consts.PlatformVivo:
+		r = &v1.VivoPushRequestData{Meta: meta}
+	case consts.PlatformOppo:
+		r = &v1.OppoPushRequestData{Meta: meta}
+	case consts.PlatformMeizu:
+		r = &v1.MeizuPushRequestData{Meta: meta}
+	case consts.PlatformHonor:
+		r = &v1.HonorPushRequestData{Meta: meta}
+	default:
+		return nil, errors.New("platform not supported")
+	}
+
 	marshalJSON, err := req.Data.MarshalJSON()
 	if err != nil {
 		return nil, err
@@ -94,14 +119,8 @@ func (h *Handler) Push(ctx context.Context, req *v1.PushRequest) (*v1.PushRespon
 		return resp, err
 	}
 
-	if err := h.validatePushRequest(&r); err != nil {
+	if err := h.validatePushRequest(r); err != nil {
 		return nil, err
-	}
-
-	r.Meta = &v1.Meta{
-		AppID:   req.AppID,
-		AppName: req.AppName,
-		Token:   req.Token,
 	}
 
 	option := v1.PushOption{}
@@ -112,9 +131,10 @@ func (h *Handler) Push(ctx context.Context, req *v1.PushRequest) (*v1.PushRespon
 		option.RetryInterval = req.Option.RetryInterval
 	}
 
-	fmt.Println("r => ", r.String())
+	fmt.Println("r => ", r)
 
-	_, err = service.Send(ctx, &r, &push2.SendOptions{
+	status.StatStorage.AddGrpcTotal(1)
+	_, err = service.Send(ctx, r, &push2.SendOptions{
 		DryRun:        option.DryRun,
 		Retry:         option.Retry,
 		RetryInterval: option.RetryInterval,
@@ -124,14 +144,13 @@ func (h *Handler) Push(ctx context.Context, req *v1.PushRequest) (*v1.PushRespon
 		h.logger.Error(err, "failed to send push")
 		return resp, err
 	}
-
 	status.StatStorage.AddGrpcSuccess(1)
 
 	h.logger.Info("Push request processed success")
 	return resp, nil
 }
 
-func (h *Handler) validatePushRequest(req *v1.APNsPushRequest) error {
+func (h *Handler) validatePushRequest(req push2.SendRequest) error {
 	if req == nil {
 		return errors.New("request is nil")
 	}
@@ -146,11 +165,11 @@ func (h *Handler) validatePushRequest(req *v1.APNsPushRequest) error {
 	//}
 
 	// 检查其他必填字段
-	if req.Title == "" {
+	if req.GetTitle() == "" {
 		return errors.New("title is required")
 	}
 
-	if req.Content == "" {
+	if req.GetContent() == "" {
 		return errors.New("message is required")
 	}
 

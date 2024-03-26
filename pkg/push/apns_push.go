@@ -239,6 +239,7 @@ func (a *APNsService) buildNotification(req push.SendRequest) (*apns2.Notificati
 		notification.Expiration = time.Unix(req.GetTTL(), 0)
 	}
 
+	notification.Priority = apns2.PriorityLow
 	if req.GetPriority() == "normal" {
 		notification.Priority = apns2.PriorityLow
 	} else if req.GetPriority() == "high" {

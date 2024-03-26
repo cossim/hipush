@@ -27,7 +27,6 @@ type HuaweiAppConfig struct {
 	AppSecret string `yaml:"app_secret"`
 	AuthUrl   string `yaml:"auth_url"`
 	PushUrl   string `yaml:"push_url"`
-	MaxRetry  int    `yaml:"max_retry"`
 }
 
 type VivoAppConfig struct {
@@ -36,7 +35,6 @@ type VivoAppConfig struct {
 	AppID     string `yaml:"app_id"`
 	AppKey    string `yaml:"app_key"`
 	AppSecret string `yaml:"app_secret"`
-	MaxRetry  int    `yaml:"max_retry"`
 }
 
 type OppoAppConfig struct {
@@ -45,16 +43,14 @@ type OppoAppConfig struct {
 	AppID     string `yaml:"app_id"`
 	AppKey    string `yaml:"app_key"`
 	AppSecret string `yaml:"app_secret"`
-	MaxRetry  int    `yaml:"max_retry"`
 }
 
 type AndroidAppConfig struct {
-	Enabled  bool   `yaml:"enabled"`
-	AppName  string `yaml:"app_name"`
-	AppID    string `yaml:"app_id"`
-	AppKey   string `yaml:"app_key"`
-	KeyPath  string `yaml:"key_path"`
-	MaxRetry int    `yaml:"max_retry"`
+	Enabled bool   `yaml:"enabled"`
+	AppName string `yaml:"app_name"`
+	AppID   string `yaml:"app_id"`
+	AppKey  string `yaml:"app_key"`
+	KeyPath string `yaml:"key_path"`
 }
 
 type XiaomiAppConfig struct {
@@ -63,15 +59,13 @@ type XiaomiAppConfig struct {
 	AppID     string   `yaml:"app_id"`
 	AppSecret string   `yaml:"app_secret"`
 	Package   []string `yaml:"package"`
-	MaxRetry  int      `yaml:"max_retry"`
 }
 
 type MeizuAppConfig struct {
-	Enabled  bool   `yaml:"enabled"`
-	AppName  string `json:"app_name"`
-	AppID    string `yaml:"app_id"`
-	AppKey   string `yaml:"app_key"`
-	MaxRetry int    `yaml:"max_retry"`
+	Enabled bool   `yaml:"enabled"`
+	AppName string `json:"app_name"`
+	AppID   string `yaml:"app_id"`
+	AppKey  string `yaml:"app_key"`
 }
 
 type HonorAppConfig struct {
@@ -80,12 +74,11 @@ type HonorAppConfig struct {
 	AppID        string `yaml:"app_id"`
 	ClientID     string `yaml:"client_id"`
 	ClientSecret string `yaml:"client_secret"`
-	MaxRetry     int    `yaml:"max_retry"`
 }
 
 type Config struct {
 	HTTP    HTTPConfig         `yaml:"http"`
-	GRPC    GRPCConfig         `yaml:"pb"`
+	GRPC    GRPCConfig         `yaml:"grpc"`
 	Storage Storage            `yaml:"storage"`
 	IOS     []iOSAppConfig     `yaml:"ios"`
 	Huawei  []HuaweiAppConfig  `yaml:"huawei"`

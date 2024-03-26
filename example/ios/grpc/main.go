@@ -24,17 +24,24 @@ func main() {
 	//Contact the server and print out its response.
 	ctx := context.Background()
 
-	ap := &v1.HonorPushRequestData{
-		Title:       "cossim",
-		Content:     "hello",
-		Icon:        "",
-		Tag:         "",
-		Group:       "",
-		NotifyId:    0,
-		TTL:         0,
-		ClickAction: nil,
-		Badge:       nil,
-		Data:        nil,
+	ap := &v1.APNsPushRequest{
+		Title:            "cossim",
+		Content:          "hello",
+		Topic:            "com.hitosea.cossim",
+		CollapseID:       "",
+		ApnsID:           "",
+		Priority:         "",
+		PushType:         "",
+		URLArgs:          nil,
+		TTL:              0,
+		Badge:            0,
+		Development:      true,
+		MutableContent:   false,
+		ContentAvailable: false,
+		Category:         "",
+		ClickAction:      nil,
+		Sound:            nil,
+		Data:             nil,
 	}
 
 	marshaler := &jsonpb.Marshaler{}
@@ -50,20 +57,18 @@ func main() {
 	}
 
 	req := &v1.PushRequest{
-		AppID:    "xxx",
+		AppID:    "com.hitosea.cossim",
 		AppName:  "cossim",
-		Platform: "honor",
+		Platform: "ios",
 		Token:    []string{"xxx"},
 		Data:     structValue,
 		Option: &v1.PushOption{
-			DryRun:        true,
+			DryRun:        false,
 			Development:   false,
 			Retry:         0,
 			RetryInterval: 0,
 		},
 	}
-
-	fmt.Println("req => ", req.Data)
 
 	resp, err := c.Push(ctx, req)
 	if err != nil {
